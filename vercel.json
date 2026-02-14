@@ -1,0 +1,8 @@
+{
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "redirects": [
+    { "source": "/enterprise", "destination": "/access.html", "permanent": true },
+    { "source": "/enterprise.html", "destination": "/access.html", "permanent": true }
+  ]
+}
