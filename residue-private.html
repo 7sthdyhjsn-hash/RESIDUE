@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Residue — Access Granted</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-theme="dark" class="page-fade-in">
+  <header>
+    <nav class="nav" aria-label="Main navigation">
+      <a class="brand" href="index.html">Residue</a>
+      <div class="nav-links" aria-label="Primary">
+        <a href="index.html#access-gate">Access</a>
+        <a href="#configure">Configure</a>
+        <a href="#enterprise">Enterprise</a>
+      </div>
+      <div class="nav-actions">
+        <button class="theme-toggle" type="button" aria-pressed="true" aria-label="Toggle theme">
+          <span class="dot" aria-hidden="true"></span>
+          <span class="theme-label">Dark</span>
+        </button>
+        <button class="menu-toggle" aria-label="Toggle menu" aria-expanded="false">
+          <span></span>
+        </button>
+      </div>
+    </nav>
+    <div class="mobile-nav" aria-label="Mobile navigation">
+      <a href="index.html#access-gate">Access</a>
+      <a href="#configure">Configure</a>
+      <a href="#enterprise">Enterprise</a>
+      <button class="theme-toggle" type="button" aria-pressed="true" aria-label="Toggle theme (mobile)">
+        <span class="dot" aria-hidden="true"></span>
+        <span class="theme-label">Dark</span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero premium-hero full-bleed fade-edges" id="top">
+      <div class="hero-overlay" aria-hidden="true"></div>
+      <div class="hero-content">
+        <div class="eyebrow premium">Access Granted</div>
+        <h1>Welcome Inside.</h1>
+        <div class="subhead premium">Residue circulates intentionally.</div>
+        <div class="accent-bar premium"></div>
+      </div>
+    </section>
+
+    <section class="brand-immersion reveal" aria-label="Brand immersion">
+      <div class="container narrow">
+        <div class="eyebrow premium">Presence</div>
+        <h2 class="h2">You Now Carry It.</h2>
+        <p class="muted">Residue is not distributed. It is deployed.</p>
+      </div>
+    </section>
+
+    <section class="premium-features reveal" aria-label="Premium signals">
+      <div class="container">
+        <div class="eyebrow premium">Precision Layer</div>
+        <h2 class="h2">Premium Signals</h2>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-dot"></div>
+            <div class="feature-title">Tuned NFC Field</div>
+            <p class="muted">Optimised read range for metal substrates without interference.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-dot"></div>
+            <div class="feature-title">Micro-engraved Mark</div>
+            <p class="muted">Sub-micron etching preserves brand fidelity under any light.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-dot"></div>
+            <div class="feature-title">Controlled Ledger</div>
+            <p class="muted">Private mapping of identifiers—no public directories, no noise.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="configure reveal" id="configure" aria-label="Configure your card">
+      <div class="container">
+        <div class="eyebrow premium">Configuration</div>
+        <h2 class="h2">Configure Your Card</h2>
+        <p class="muted">Set the signal. We handle the deployment.</p>
+        <form class="configure-form" action="#" method="post" data-external="true" data-endpoint="https://formsubmit.co/ajax/limrik.swanepoel@icloud.com">
+          <input type="hidden" name="_subject" value="Residue Configure Submission">
+          <input type="hidden" name="_template" value="table">
+          <input type="hidden" name="_next" value="/thank-you.html">
+          <input type="text" name="_honey" style="display:none">
+          <label for="full-name">Full Name</label>
+          <input id="full-name" name="full-name" type="text" autocomplete="name" required>
+
+          <label for="role">Title / Role</label>
+          <input id="role" name="role" type="text" autocomplete="organization-title">
+
+          <label for="website">Website URL</label>
+          <input id="website" name="website" type="url" placeholder="https://">
+
+          <label for="phone">Phone Number</label>
+          <input id="phone" name="phone" type="tel" autocomplete="tel">
+
+          <label for="email-config">Email</label>
+          <input id="email-config" name="email-config" type="email" autocomplete="email">
+
+          <label for="social">Social Links</label>
+          <div class="stack" style="gap:10px;">
+            <input id="social" name="social" type="url" placeholder="https://">
+            <input name="social-2" type="url" placeholder="https:// (optional)">
+          </div>
+
+          <label for="logo">Upload Logo</label>
+          <input id="logo" name="logo" type="file" accept="image/svg+xml,image/png">
+
+          <label for="mark">Upload Personal Mark (optional)</label>
+          <input id="mark" name="mark" type="file" accept="image/svg+xml,image/png">
+
+          <fieldset class="finish">
+            <legend>Finish Selection</legend>
+            <label><input type="radio" name="finish" value="Matte Black" checked> Matte Black</label>
+            <label><input type="radio" name="finish" value="Brushed Steel"> Brushed Steel</label>
+            <label><input type="radio" name="finish" value="Graphite"> Graphite</label>
+          </fieldset>
+
+          <label for="quantity">Quantity</label>
+          <input id="quantity" name="quantity" type="number" min="1" value="1">
+
+          <div class="price-line">
+            <span class="label">Pricing</span>
+            <span class="value">R699 per card</span>
+          </div>
+          <p class="muted small">2–4 cards → R649 each · 5+ cards → R599 each</p>
+
+          <button class="btn btn-outline premium-btn" type="submit">Deploy Card</button>
+          <div class="status configure-status" aria-live="polite" hidden>Deployment initiated.</div>
+        </form>
+      </div>
+    </section>
+
+    <section class="enterprise reveal" id="enterprise" aria-label="Enterprise deployment">
+      <div class="container">
+        <div class="eyebrow premium">Enterprise</div>
+        <h2 class="h2">Enterprise Deployment</h2>
+        <p class="muted">Batch configuration. Team distribution. Controlled circulation.</p>
+        <form class="enterprise-form" action="#" method="post" data-external="true" data-endpoint="https://formsubmit.co/ajax/limrik.swanepoel@icloud.com">
+          <input type="hidden" name="_subject" value="Residue Enterprise Request">
+          <input type="hidden" name="_template" value="table">
+          <input type="hidden" name="_next" value="/thank-you.html">
+          <input type="text" name="_honey" style="display:none">
+          <label for="ent-company">Company</label>
+          <input id="ent-company" name="ent-company" type="text" autocomplete="organization">
+
+          <label for="ent-size">Estimated team size</label>
+          <input id="ent-size" name="ent-size" type="number" min="1" placeholder="10">
+
+          <label for="ent-email">Contact email</label>
+          <input id="ent-email" name="ent-email" type="email" autocomplete="email" required>
+
+          <button class="btn btn-outline premium-btn" type="submit">Request Enterprise Access</button>
+          <div class="status enterprise-status" aria-live="polite" hidden>Request received.</div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">Minimal identity layer. Controlled circulation.</div>
+  </footer>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
