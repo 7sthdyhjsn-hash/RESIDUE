@@ -111,42 +111,38 @@
           </div>
 
           <label for="logo">Upload Logo</label>
-          <input id="logo" name="logo" type="file" accept="image/svg+xml,image/png">
+          <input id="logo" name="logo" type="file" accept="image/svg+xml,image/png,application/pdf">
 
-          <label for="mark">Upload Personal Mark (optional)</label>
-          <input id="mark" name="mark" type="file" accept="image/svg+xml,image/png">
-
-          <fieldset class="finish">
-            <legend>Finish</legend>
-            <label><input type="radio" name="finish" value="Matte Black" checked> Matte Black (stainless steel)</label>
-          </fieldset>
+          <label for="mark">Upload additional design (optional)</label>
+          <input id="mark" name="mark" type="file" accept="image/svg+xml,image/png,application/pdf">
 
           <label for="quantity">Quantity</label>
           <input id="quantity" name="quantity" type="number" min="1" value="1">
 
-          <div class="price-line">
-            <span class="label">Pricing</span>
-            <span class="value">R699 per card</span>
+          <div class="stack" style="gap:6px; margin-top:12px; align-items:flex-start;">
+            <div class="eyebrow premium">Pricing</div>
+            <div class="muted small">R699 per card</div>
+            <div class="muted small">2–4 cards: R649 each</div>
+            <div class="muted small">5+ cards: R599 each</div>
           </div>
-          <p class="muted small">2–4 cards → R649 each · 5+ cards → R599 each</p>
 
           <div class="stack" style="gap:10px; margin-top:12px;">
             <div class="eyebrow premium">Payment (EFT)</div>
-            <p class="muted small">Pay via EFT and upload proof. Reference must match what you enter below.</p>
+            <p class="muted small">Pay via EFT and upload proof.</p>
             <div class="price-line" style="align-items:flex-start; flex-direction:column; gap:4px;">
+              <span class="label">Bank: <strong>Capitec</strong></span>
               <span class="label">Account name: <strong>Residue</strong></span>
-              <span class="label">Account / IBAN: <strong>2505127022</strong></span>
-              <span class="label">SWIFT / BIC: <strong>CABLZAJJ</strong></span>
+              <span class="label">Account number: <strong>2505127022</strong></span>
             </div>
-            <label for="payment-ref">Your payment reference</label>
-            <input id="payment-ref" name="payment-ref" type="text" placeholder="e.g. FOUNDER-001 + your name" required>
+            <label for="payment-ref">Payment reference</label>
+            <input id="payment-ref" name="payment-ref" type="text" placeholder="Your name" required>
 
             <label for="proof">Upload proof of payment</label>
             <input id="proof" name="proof" type="file" accept="image/*,.pdf" required>
           </div>
 
           <button class="btn btn-outline premium-btn" type="submit">Deploy Card</button>
-          <div class="status configure-status" aria-live="polite" hidden>Deployment initiated.</div>
+          <div class="status configure-status" aria-live="polite" hidden>We will be in touch soon.</div>
         </form>
       </div>
     </section>
