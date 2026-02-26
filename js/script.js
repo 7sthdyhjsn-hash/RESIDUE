@@ -203,4 +203,49 @@
   if (localStorage.getItem('residue-access') === 'granted' && window.location.pathname.endsWith('residue-private.html')) {
     // already in premium
   }
+
+
+
+  // ROTATING HERO HEADER
+  const quotes = [
+    [
+      "You don’t need to be the",
+      "loudest in the room."
+    ],
+    [
+      "First impressions fade.",
+      "Residue remains."
+    ],
+    [
+      "Luxury is remembered.",
+      "Not announced."
+    ]
+  ];
+
+  const quoteElement = document.getElementById("rotating-quote");
+  let index = 0;
+
+  function changeQuote() {
+    quoteElement.classList.add("fade-out");
+
+    setTimeout(() => {
+      index = (index + 1) % quotes.length;
+
+      quoteElement.innerHTML = `
+        <span class="nowrap">${quotes[index][0]}</span><br>
+        <span class="nowrap">${quotes[index][1]}</span>
+      `;
+
+      quoteElement.classList.remove("fade-out");
+      quoteElement.classList.add("fade-in");
+
+      setTimeout(() => {
+        quoteElement.classList.remove("fade-in");
+      }, 600);
+
+    }, 600);
+  }
+
+  setInterval(changeQuote, 5000);
+
 })();
