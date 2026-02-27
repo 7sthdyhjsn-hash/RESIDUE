@@ -297,14 +297,14 @@
       if (title) title.textContent = isSignin ? "Sign in" : "Create account";
       if (subtitle) subtitle.textContent = isSignin
         ? "Enter your credentials to continue."
-        : "Set a username and password to continue.";
+        : "Set your email and password to continue.";
 
       setStatus(signinStatus, "", false);
       setStatus(createStatus, "", false);
 
       // focus first field
       setTimeout(() => {
-        const first = isSignin ? $("#signin-email") : $("#create-username");
+        const first = isSignin ? $("#signin-email") : $("#create-email");
         first?.focus();
       }, 50);
     }
@@ -355,25 +355,22 @@
     createForm?.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const username = ($("#create-username")?.value || "").trim().toLowerCase();
       const email = ($("#create-email")?.value || "").trim().toLowerCase();
       const password = $("#create-password")?.value || "";
       const confirm = $("#create-confirm")?.value || "";
 
-      if (username.length < 3) return setStatus(createStatus, "Username must be at least 3 characters.", true);
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setStatus(createStatus, "Enter a valid email.", true);
       if (password.length < 6) return setStatus(createStatus, "Password must be at least 6 characters.", true);
       if (password !== confirm) return setStatus(createStatus, "Passwords do not match.", true);
 
       const users = getUsers();
-      if (users.some(u => u.username === username)) return setStatus(createStatus, "That username is already taken.", true);
       if (users.some(u => (u.email || "").toLowerCase() === email)) return setStatus(createStatus, "That email is already in use.", true);
 
       const passwordHash = await sha256Hex(password);
-      users.push({ username, email, passwordHash, createdAt: new Date().toISOString() });
+      users.push({ email, passwordHash, createdAt: new Date().toISOString() });
       saveUsers(users);
 
-      localStorage.setItem(CURRENT_USER_KEY, username);
+      localStorage.setItem(CURRENT_USER_KEY, email);
       setStatus(createStatus, "Account created.", true);
 
       setTimeout(() => {
