@@ -785,6 +785,166 @@ input:focus, textarea:focus {
   border-color: rgba(16,18,24,0.08);
 }
 
+
+
+
+
+
+
+
+
+
+
+
+/* ========= CREATE ACCOUNT MODAL ========= */
+.modal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.modal.is-open {
+  display: grid;
+  place-items: start center;
+  padding: 20px 16px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.modal-panel {
+  position: relative;
+  z-index: 1;
+  width: min(560px, 100%);
+  margin: 0;
+  padding: 26px 22px 22px;
+  max-height: calc(100vh - 40px);
+  border-radius: 16px;
+
+  background: rgba(10,10,10,0.72);
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow:
+    0 30px 90px rgba(0,0,0,0.55),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.modal-panel::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* subtle interior glow like your access card */
+.modal-panel::before{
+  content:"";
+  position:absolute;
+  inset:-40%;
+  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.10), transparent 55%);
+  pointer-events:none;
+  filter: blur(18px);
+}
+
+.modal-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.25);
+  color: rgba(255,255,255,0.85);
+  cursor: pointer;
+}
+
+.modal-form {
+  position: relative;
+  z-index: 1; /* above glow */
+}
+
+.modal-form input {
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px 12px;
+  border-radius: 10px;
+
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.14);
+  color: rgba(255,255,255,0.92);
+  outline: none;
+}
+
+.modal-form input:focus {
+  border-color: rgba(255,255,255,0.28);
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.06);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.modal-status {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04);
+}
+
+/* ===== Auth toggle ===== */
+.auth-toggle {
+  margin-top: 14px;
+  display: inline-flex;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04);
+}
+
+.auth-tab {
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(255,255,255,0.72);
+  padding: 8px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  font-weight: 600;
+  font-size: 0.78rem;
+}
+
+.auth-tab.is-active {
+  color: rgba(255,255,255,0.92);
+  border-color: rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.25);
+}
+
+
+
+
+
+
+
+
+
+
 /* Structural bands */
 .full-bleed {
   position: relative;
@@ -1082,7 +1242,7 @@ input:focus, textarea:focus {
 }
 
 /* modal overlay for payment form */
-.modal {
+.pay-modal {
   position: fixed;
   inset: 0;
   display: flex;
@@ -1091,10 +1251,10 @@ input:focus, textarea:focus {
   background: rgba(0,0,0,0.6);
   z-index: 1000;
 }
-.modal.hidden {
+.pay-modal.hidden {
   display: none;
 }
-.modal .modal-content {
+.pay-modal .modal-content {
   position: relative;
   background: var(--bg);
   padding: 24px 36px;
@@ -1103,7 +1263,7 @@ input:focus, textarea:focus {
   max-height: 90%;
   overflow: auto;
 }
-.modal .close-btn {
+.pay-modal .close-btn {
   position: absolute;
   top: 12px;
   right: 12px;
