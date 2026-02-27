@@ -121,21 +121,182 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
   }
 
   /* Admin */
+  const USERS_KEY = 'residue_users';
+  const CURRENT_USER_KEY = 'residue_current_user';
+  const RESET_OTP_KEY = 'residue_reset_otp';
+  const LOCAL_PROFILE_KEY_PREFIX = 'residue_link_profile_';
+  const LOCAL_GALLERY_KEY_PREFIX = 'residue_link_gallery_';
+  const LOCAL_MUSIC_KEY_PREFIX = 'residue_link_music_';
+  const MAX_GALLERY_IMAGES = 50;
+  const MAX_MUSIC_FILES = 20;
+  const TEMP_ADMIN_USERNAME = 'Mike@17';
+  const TEMP_ADMIN_PASSWORD = '123456';
+
+  function getLocalUsers() {
+    try {
+      return JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
+    } catch {
+      return [];
+    }
+  }
+
+  function saveLocalUsers(users) {
+    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  }
+
+  async function sha256Hex(text) {
+    const data = new TextEncoder().encode(text);
+    const hashBuf = await crypto.subtle.digest('SHA-256', data);
+    return [...new Uint8Array(hashBuf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  function normalizeEmail(value) {
+    return (value || '').trim().toLowerCase();
+  }
+
+  function slugify(value) {
+    return (value || '')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 60);
+  }
+
+  const localProfileKey = slug => `${LOCAL_PROFILE_KEY_PREFIX}${(slug || '').toLowerCase()}`;
+  const localGalleryKey = slug => `${LOCAL_GALLERY_KEY_PREFIX}${(slug || '').toLowerCase()}`;
+  const localMusicKey = slug => `${LOCAL_MUSIC_KEY_PREFIX}${(slug || '').toLowerCase()}`;
+
   function bindAuth() {
     const loginBtn = document.getElementById('lt-login');
     const signupBtn = document.getElementById('lt-signup');
     const emailInput = document.getElementById('lt-auth-email');
     const passInput = document.getElementById('lt-auth-pass');
     const statusEl = document.getElementById('lt-auth-status');
+    const forgotToggle = document.getElementById('lt-forgot-toggle');
+    const resetModal = document.getElementById('lt-reset-modal');
+    const resetCloseEls = resetModal?.querySelectorAll('[data-reset-close]');
+    const resetEmail = document.getElementById('lt-reset-email');
+    const sendOtpBtn = document.getElementById('lt-send-otp');
+    const otpInput = document.getElementById('lt-reset-otp');
+    const resetPass = document.getElementById('lt-reset-pass');
+    const resetConfirm = document.getElementById('lt-reset-confirm');
+    const resetSubmit = document.getElementById('lt-reset-submit');
+    const resetStatus = document.getElementById('lt-reset-status');
+
+    const openResetModal = () => {
+      if (!resetModal) return;
+      resetModal.hidden = false;
+      document.body.style.overflow = 'hidden';
+      showStatusEl(resetStatus, '', '');
+      const currentEmail = emailInput?.value?.trim() || '';
+      if (resetEmail && currentEmail) resetEmail.value = currentEmail;
+      setTimeout(() => resetEmail?.focus(), 0);
+    };
+
+    const closeResetModal = () => {
+      if (!resetModal) return;
+      resetModal.hidden = true;
+      document.body.style.overflow = '';
+    };
+
+    forgotToggle?.addEventListener('click', (e) => {
+      e.preventDefault();
+      openResetModal();
+    });
+    resetCloseEls?.forEach(el => el.addEventListener('click', closeResetModal));
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && !resetModal?.hidden) closeResetModal();
+    });
+
+    sendOtpBtn?.addEventListener('click', () => {
+      const email = normalizeEmail(resetEmail?.value);
+      if (!email) return showStatusEl(resetStatus, 'Enter your account email.', 'error');
+      const users = getLocalUsers();
+      const user = users.find(u => normalizeEmail(u.email) === email);
+      if (!user) return showStatusEl(resetStatus, 'No account found for that email.', 'error');
+
+      const otp = String(Math.floor(100000 + Math.random() * 900000));
+      const payload = { email, otp, expiresAt: Date.now() + (10 * 60 * 1000) };
+      sessionStorage.setItem(RESET_OTP_KEY, JSON.stringify(payload));
+      showStatusEl(resetStatus, `OTP sent to ${email}. Demo OTP: ${otp}`, 'success');
+    });
+
+    resetSubmit?.addEventListener('click', async () => {
+      const email = normalizeEmail(resetEmail?.value);
+      const otp = (otpInput?.value || '').trim();
+      const nextPassword = resetPass?.value || '';
+      const confirmPassword = resetConfirm?.value || '';
+
+      if (!email || !otp || !nextPassword || !confirmPassword) {
+        return showStatusEl(resetStatus, 'Complete all reset fields.', 'error');
+      }
+      if (nextPassword.length < 6) return showStatusEl(resetStatus, 'Password must be at least 6 characters.', 'error');
+      if (nextPassword !== confirmPassword) return showStatusEl(resetStatus, 'Passwords do not match.', 'error');
+
+      let payload = null;
+      try {
+        payload = JSON.parse(sessionStorage.getItem(RESET_OTP_KEY) || 'null');
+      } catch {
+        payload = null;
+      }
+
+      if (!payload) return showStatusEl(resetStatus, 'Request a new OTP first.', 'error');
+      if (payload.email !== email) return showStatusEl(resetStatus, 'OTP email does not match.', 'error');
+      if (payload.otp !== otp) return showStatusEl(resetStatus, 'Invalid OTP.', 'error');
+      if (Date.now() > payload.expiresAt) return showStatusEl(resetStatus, 'OTP expired. Request a new one.', 'error');
+
+      const users = getLocalUsers();
+      const idx = users.findIndex(u => normalizeEmail(u.email) === email);
+      if (idx < 0) return showStatusEl(resetStatus, 'Account not found.', 'error');
+
+      users[idx].passwordHash = await sha256Hex(nextPassword);
+      users[idx].updatedAt = new Date().toISOString();
+      saveLocalUsers(users);
+      sessionStorage.removeItem(RESET_OTP_KEY);
+
+      if (passInput) passInput.value = '';
+      if (emailInput) emailInput.value = email;
+      if (otpInput) otpInput.value = '';
+      if (resetPass) resetPass.value = '';
+      if (resetConfirm) resetConfirm.value = '';
+      showStatusEl(resetStatus, 'Password reset. You can sign in now.', 'success');
+    });
 
     const doAuth = async mode => {
       try {
-        if (isFileProtocol) return showStatusEl(statusEl, 'Run over http://, not file://', 'error');
-        if (!supabase) return showStatusEl(statusEl, 'Missing Supabase config', 'error');
-        const email = emailInput.value.trim();
-        const password = passInput.value.trim();
+        const email = normalizeEmail(emailInput?.value);
+        const password = passInput?.value?.trim() || '';
         if (!email || !password) return showStatusEl(statusEl, 'Enter email and password', 'error');
-        showStatusEl(statusEl, mode === 'login' ? 'Logging in…' : 'Creating account…', 'loading');
+        showStatusEl(statusEl, mode === 'login' ? 'Logging in...' : 'Creating account...', 'loading');
+
+        if (mode === 'login') {
+          if (emailInput?.value?.trim() === TEMP_ADMIN_USERNAME && password === TEMP_ADMIN_PASSWORD) {
+            localStorage.setItem(CURRENT_USER_KEY, TEMP_ADMIN_USERNAME);
+            showStatusEl(statusEl, 'Success', 'success');
+            toggleEditor(true);
+            setAuthOnly(false);
+            closeResetModal();
+            return;
+          }
+
+          const users = getLocalUsers();
+          const localUser = users.find(u => normalizeEmail(u.email) === email);
+          if (localUser) {
+            const hash = await sha256Hex(password);
+            if (hash !== localUser.passwordHash) return showStatusEl(statusEl, 'Incorrect password.', 'error');
+
+            localStorage.setItem(CURRENT_USER_KEY, localUser.username);
+            showStatusEl(statusEl, 'Success', 'success');
+            toggleEditor(true);
+            setAuthOnly(false);
+            closeResetModal();
+            return;
+          }
+        }
+
+        if (isFileProtocol) return showStatusEl(statusEl, 'Run over http://, not file://', 'error');
+        if (!supabase) return showStatusEl(statusEl, mode === 'login' ? 'No matching local account found.' : 'Missing Supabase config', 'error');
         let error, data;
         if (mode === 'login') {
           ({ error, data } = await supabase.auth.signInWithPassword({ email, password }));
@@ -207,8 +368,16 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
   }
 
   function toggleEditor(show) {
-    document.getElementById('lt-auth-card').hidden = show;
-    document.getElementById('lt-editor').hidden = !show;
+    const authCard = document.getElementById('lt-auth-card');
+    const editorCard = document.getElementById('lt-editor');
+    if (authCard) {
+      authCard.hidden = show;
+      authCard.style.display = show ? 'none' : 'grid';
+    }
+    if (editorCard) {
+      editorCard.hidden = !show;
+      editorCard.style.display = show ? 'grid' : 'none';
+    }
   }
 
   function fillEditor(profile, links) {
@@ -250,6 +419,25 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
   function collectLinks() {
     const inputs = Array.from(document.querySelectorAll('.lt-link-row input'));
+    if (!inputs.length) {
+      const socialIds = ['social', 'social-2', 'social-3', 'social-4', 'social-5', 'social-6'];
+      return socialIds
+        .map(id => document.getElementById(id))
+        .filter(Boolean)
+        .map(input => (input.value || '').trim())
+        .filter(Boolean)
+        .map((url, i) => {
+          const withProtocol = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+          let label = `Link ${i + 1}`;
+          try {
+            const parsed = new URL(withProtocol);
+            const base = (parsed.hostname || '').replace('www.', '').split('.')[0] || label;
+            label = base.charAt(0).toUpperCase() + base.slice(1);
+          } catch {}
+          return { label, url: withProtocol, sort: i };
+        });
+    }
+
     const grouped = {};
     inputs.forEach(input => {
       const idx = input.dataset.idx;
@@ -283,9 +471,125 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
   }
 
   function bindEditorActions() {
+    const previewBtn = document.getElementById('lt-preview');
+    const previewStatusEl = document.getElementById('lt-preview-status');
+    const previewModal = document.getElementById('lt-preview-modal');
+    const previewCloseEls = previewModal?.querySelectorAll('[data-preview-close]');
+    const previewFrame = document.getElementById('lt-preview-frame');
+    const PREVIEW_SLUG = 'preview-card';
+
+    const closePreviewModal = () => {
+      if (!previewModal) return;
+      previewModal.hidden = true;
+      document.body.style.overflow = '';
+      if (previewFrame) previewFrame.src = 'about:blank';
+    };
+
+    const openPreviewModal = () => {
+      if (!previewModal) return;
+      previewModal.hidden = false;
+      document.body.style.overflow = 'hidden';
+    };
+
+    const renderPreview = async () => {
+      const name = getValue('full-name') || 'Your name';
+      const role = getValue('role') || '';
+      const bio = getValue('lt-bio') || '';
+      const email = getValue('email-config');
+      const phone = getValue('phone');
+      const website = getValue('website');
+      const links = collectLinks();
+      if (website) links.unshift({ label: 'Website', url: /^https?:\/\//i.test(website) ? website : `https://${website}` });
+      if (phone) links.unshift({ label: 'Call', url: `tel:${phone}` });
+      if (email) links.unshift({ label: 'Email', url: `mailto:${email}` });
+
+      const logoInput = document.getElementById('logo');
+      const logoFile = logoInput?.files?.[0];
+      let avatarUrl = 'https://placehold.co/220x220?text=Profile';
+      if (logoFile && (logoFile.type || '').startsWith('image/')) {
+        try {
+          avatarUrl = await fileToDataURL(logoFile);
+        } catch {
+          avatarUrl = 'https://placehold.co/220x220?text=Profile';
+        }
+      }
+
+      const galleryInput = document.getElementById('mark');
+      const imageFiles = galleryInput?.files
+        ? Array.from(galleryInput.files).filter(file => (file.type || '').startsWith('image/'))
+        : [];
+      const galleryImages = imageFiles.length ? await Promise.all(imageFiles.map(fileToDataURL)) : [];
+
+      const musicInput = document.getElementById('music-files');
+      const audioFiles = musicInput?.files
+        ? Array.from(musicInput.files).filter(file => (file.type || '').includes('audio') || /\.mp3$/i.test(file.name || ''))
+        : [];
+      const musicTracks = audioFiles.map(file => ({
+        name: (file.name || 'Track').replace(/\.[^/.]+$/, ''),
+        src: URL.createObjectURL(file)
+      }));
+
+      const previewProfile = {
+        name,
+        title: role,
+        bio,
+        avatar_url: avatarUrl,
+        theme: 'dark',
+        slug: PREVIEW_SLUG,
+        links
+      };
+
+      localStorage.setItem(localProfileKey(PREVIEW_SLUG), JSON.stringify(previewProfile));
+      localStorage.setItem(localGalleryKey(PREVIEW_SLUG), JSON.stringify(galleryImages));
+      localStorage.setItem(localMusicKey(PREVIEW_SLUG), JSON.stringify(musicTracks));
+
+      if (previewFrame) {
+        previewFrame.src = `link-profile.html?u=${encodeURIComponent(PREVIEW_SLUG)}&preview=1&t=${Date.now()}`;
+      }
+    };
+
+    previewBtn?.addEventListener('click', async evt => {
+      evt.preventDefault();
+      try {
+        await renderPreview();
+        openPreviewModal();
+        showStatusEl(previewStatusEl, 'Preview loaded.', 'success');
+      } catch (err) {
+        showStatusEl(previewStatusEl, err.message || 'Could not build preview.', 'error');
+      }
+    });
+    previewCloseEls?.forEach(el => el.addEventListener('click', closePreviewModal));
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && !previewModal?.hidden) closePreviewModal();
+    });
+
+    const galleryInput = document.getElementById('mark');
+    const musicInput = document.getElementById('music-files');
+
+    const clampSelectedFiles = (input, max, label) => {
+      if (!input?.files || input.files.length <= max) return;
+      const limited = Array.from(input.files).slice(0, max);
+      try {
+        const dt = new DataTransfer();
+        limited.forEach(file => dt.items.add(file));
+        input.files = dt.files;
+      } catch {
+        // Fallback: keep original list in input, enforce at save-time.
+      }
+      window.alert(`${label} is limited to ${max} files. Extra files were ignored.`);
+    };
+
+    galleryInput?.addEventListener('change', () => {
+      clampSelectedFiles(galleryInput, MAX_GALLERY_IMAGES, 'Gallery');
+    });
+    musicInput?.addEventListener('change', () => {
+      clampSelectedFiles(musicInput, MAX_MUSIC_FILES, 'Music');
+    });
+
     const addBtn = document.getElementById('lt-add-link');
     addBtn?.addEventListener('click', () => {
       const wrap = document.getElementById('lt-links-editor');
+      if (!wrap) return;
       const existing = wrap.querySelectorAll('.lt-link-row').length;
       if (existing >= MAX_LINKS) return;
       wrap.appendChild(linkRow('', '', existing));
@@ -293,25 +597,85 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
     const saveBtn = document.getElementById('lt-save');
     const statusEl = document.getElementById('lt-save-status');
-    saveBtn?.addEventListener('click', async () => {
+    saveBtn?.addEventListener('click', async evt => {
+      evt.preventDefault();
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return showStatusEl(statusEl, 'Not signed in.', 'error');
-        const profile = collectProfilePayload(session.user.id);
+        let session = null;
+        if (supabase) {
+          ({ data: { session } } = await supabase.auth.getSession());
+          if (!session) return showStatusEl(statusEl, 'Not signed in.', 'error');
+        }
+
+        const profile = collectProfilePayload(session?.user?.id || CURRENT_USER_KEY);
         if (!profile.name) return showStatusEl(statusEl, 'Name is required.', 'error');
         if (!profile.slug) return showStatusEl(statusEl, 'Slug / URL is required.', 'error');
         const links = collectLinks();
-        showStatusEl(statusEl, 'Saving…', 'loading');
-        const { error: pErr } = await supabase.from('profiles').upsert(profile);
-        if (pErr) {
-          showStatusEl(statusEl, pErr.message, 'error');
-          return;
+        showStatusEl(statusEl, 'Saving...', 'loading');
+
+        if (supabase && session) {
+          const { error: pErr } = await supabase.from('profiles').upsert(profile);
+          if (pErr) {
+            showStatusEl(statusEl, pErr.message, 'error');
+            return;
+          }
+          await supabase.from('links').delete().eq('profile_id', session.user.id);
+          if (links.length) {
+            await supabase.from('links').insert(links.map(l => ({ ...l, profile_id: session.user.id })));
+          }
         }
-        await supabase.from('links').delete().eq('profile_id', session.user.id);
-        if (links.length) {
-          await supabase.from('links').insert(links.map(l => ({ ...l, profile_id: session.user.id })));
+
+        const imageFiles = galleryInput?.files
+          ? Array.from(galleryInput.files).filter(file => (file.type || '').startsWith('image/'))
+          : [];
+        const limitedImageFiles = imageFiles.slice(0, MAX_GALLERY_IMAGES);
+        let galleryImages = [];
+        if (limitedImageFiles.length) {
+          galleryImages = await Promise.all(limitedImageFiles.map(fileToDataURL));
+        } else {
+          try {
+            galleryImages = JSON.parse(localStorage.getItem(localGalleryKey(profile.slug)) || '[]');
+          } catch {
+            galleryImages = [];
+          }
         }
-        showStatusEl(statusEl, 'Saved. Redirecting…', 'success');
+
+        const audioFiles = musicInput?.files
+          ? Array.from(musicInput.files).filter(file =>
+            (file.type || '').includes('audio') || /\.mp3$/i.test(file.name || '')
+          )
+          : [];
+        const limitedAudioFiles = audioFiles.slice(0, MAX_MUSIC_FILES);
+        let musicTracks = [];
+        if (limitedAudioFiles.length) {
+          for (const file of limitedAudioFiles) {
+            const fallbackName = (file.name || 'Track').replace(/\.[^/.]+$/, '');
+            const enteredName = window.prompt(`Enter a display name for "${file.name}"`, fallbackName);
+            const trackName = (enteredName || fallbackName).trim() || fallbackName;
+            const src = await fileToDataURL(file);
+            musicTracks.push({ name: trackName, src });
+          }
+        } else {
+          try {
+            musicTracks = JSON.parse(localStorage.getItem(localMusicKey(profile.slug)) || '[]');
+          } catch {
+            musicTracks = [];
+          }
+        }
+
+        const localProfile = {
+          name: profile.name,
+          title: profile.title,
+          bio: profile.bio,
+          avatar_url: profile.avatar_url,
+          theme: profile.theme,
+          slug: profile.slug,
+          links
+        };
+        localStorage.setItem(localProfileKey(profile.slug), JSON.stringify(localProfile));
+        localStorage.setItem(localGalleryKey(profile.slug), JSON.stringify(galleryImages));
+        localStorage.setItem(localMusicKey(profile.slug), JSON.stringify(musicTracks));
+
+        showStatusEl(statusEl, 'Saved. Redirecting...', 'success');
         const target = `${window.location.origin}/link-profile.html?u=${encodeURIComponent(profile.slug)}`;
         setTimeout(() => { window.location.href = target; }, 500);
       } catch (err) {
@@ -320,11 +684,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
       }
     });
   }
-
   function collectProfilePayload(userId) {
-    const name = getValue('lt-name');
-    const slug = getValue('lt-slug');
-    const title = getValue('lt-title');
+    const name = getValue('full-name') || getValue('lt-name');
+    const slug = getValue('lt-slug') || slugify(name || getValue('email-config'));
+    const title = getValue('role') || getValue('lt-title');
     const bio = getValue('lt-bio');
     const avatar_url = getValue('lt-avatar-url');
     const theme = document.querySelector('input[name="lt-theme"]:checked')?.value || 'dark';
@@ -449,16 +812,18 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
     renderAdmin: () => {
       if (isFileProtocol) {
         showStatusEl(document.getElementById('lt-auth-status'), 'Run over http://, not file://', 'error');
-        return;
       }
       if (!supabase) {
-        showStatusEl(document.getElementById('lt-auth-status'), 'Missing Supabase config', 'error');
-        return;
+        showStatusEl(document.getElementById('lt-auth-status'), 'Supabase not configured. Local account login is still available.', 'success');
       }
+      localStorage.removeItem(CURRENT_USER_KEY);
       setAuthOnly(true);
+      toggleEditor(false);
       bindAuth();
       bindEditorActions();
-      initSession();
     }
   };
 })();
+
+
+
