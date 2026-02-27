@@ -208,6 +208,8 @@
 
     const USERS_KEY = "residue_users";
     const CURRENT_USER_KEY = "residue_current_user";
+    const TEMP_MOCK_USERNAME = "Mike@17";
+    const TEMP_MOCK_PASSWORD = "123456";
 
     function getUsers() {
       try { return JSON.parse(localStorage.getItem(USERS_KEY) || "[]"); }
@@ -315,6 +317,17 @@
 
       const username = ($("#signin-username")?.value || "").trim().toLowerCase();
       const password = $("#signin-password")?.value || "";
+      const mockUsername = TEMP_MOCK_USERNAME.toLowerCase();
+
+      if (username === mockUsername && password === TEMP_MOCK_PASSWORD) {
+        localStorage.setItem(CURRENT_USER_KEY, TEMP_MOCK_USERNAME);
+        setStatus(signinStatus, "Signed in.", true);
+        setTimeout(() => {
+          closeAuthModal();
+          signinForm.reset();
+        }, 500);
+        return;
+      }
 
       if (username.length < 3) return setStatus(signinStatus, "Username must be at least 3 characters.", true);
       if (password.length < 6) return setStatus(signinStatus, "Password must be at least 6 characters.", true);
