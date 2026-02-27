@@ -1,163 +1,167 @@
-(() => {
-  const STORAGE_KEY = 'residueAccessUnlocked';
-  const USED_CODES_KEY = 'usedCodes';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Access — Residue</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/scipt.js"></script>
+</head>
+<body class="access-page">
+  <header>
+    <nav class="nav" aria-label="Main navigation">
+      <a class="brand" href="index.html">Residue</a>
+      <div class="nav-links" aria-label="Primary">
+        <a href="about.html">About</a>
+        <a href="access.html">Access</a>
+        <a href="how-it-works.html">How it works</a>
+        <a href="drop.html">Circulation</a>
+      </div>
+      <div class="nav-actions">
+        <button class="theme-toggle" type="button" aria-pressed="false" aria-label="Toggle theme">
+          <span class="dot" aria-hidden="true"></span>
+          <span class="theme-label">Dark</span>
+        </button>
+        <button class="menu-toggle" aria-label="Toggle menu" aria-expanded="false">
+          <span></span>
+        </button>
+      </div>
+    </nav>
+    <div class="mobile-nav" aria-label="Mobile navigation">
+      <a href="about.html">About</a>
+      <a href="access.html">Access</a>
+      <a href="how-it-works.html">How it works</a>
+      <a href="drop.html">Circulation</a>
+      <button class="theme-toggle" type="button" aria-pressed="false" aria-label="Toggle theme (mobile)">
+        <span class="dot" aria-hidden="true"></span>
+        <span class="theme-label">Dark</span>
+      </button>
+    </div>
+  </header>
 
-  const MASTER_CODES = ['FOUNDER-001'];
+  <main class="container" style="padding-top: 120px;">
+    <section class="panel reveal center">
+      <div class="stack" style="align-items:center; text-align:center;">
+        <div class="brandmark">Residue</div>
+        <h1 class="h2" style="margin: 0;">Access</h1>
+        <p class="muted gate-intro">ENTER YOUR CODE.</p>
+      </div>
+    </section>
 
-  const accessConfig = {
-    validCodes: MASTER_CODES,
-    productLinks: {
-      core: '#', // replace with live link
-      pair: '#', // replace with live link
-      set:  '#', // replace with live link
-    },
-    brandCopy: {
-      checking: 'Checking code',
-      granted: 'Access granted.',
-      invalid: 'Code not recognised. Request access if needed.',
-      reused: 'This code was used on this device. Request access if needed.',
-      missing: 'Enter a code to continue.',
-      format: 'Use your issued access code.',
-      requestMissing: 'Check your details. Some fields are missing.',
-      requestEmail: 'Email looks off. Adjust and resend.',
-      requestReceived: 'Received. We will respond if aligned.',
-      requestSending: 'Sending…',
-    }
-  };
+    <!--ACCESS CODE-->
+    <section class="panel reveal center" style="margin-top: 28px;">
+      <h3 style="margin-top: 0;">Access code</h3>
+      <form class="gate-form" method="post" style="max-width: 420px; margin: 0 auto;">
+        <label for="access-code" class="muted">Code</label>
+        <div class="code-row" style="justify-content:center;">
+          <input id="access-code" name="access-code" type="password" placeholder="•••••••••" autocomplete="one-time-code" required>
+          <button type="submit" class="btn">Unlock</button>
+        </div>
+        <div class="status gate-status" aria-live="polite" hidden>Access not recognised.</div>
+      </form>
+      <div style="margin-top: 16px;">
+        <a href="#request-access" class="muted" style="text-decoration: underline;">Request access instead</a>
+      </div>
+    </section>
 
-  // Future helper for generating codes (server should own this, not the client).
-  // function generateCode(prefix = 'RES', number = 1) {
-  //   const padded = String(number).padStart(4, '0');
-  //   return `${prefix}-${padded}`;
-  // }
+    <!-- AUTH MODAL (Sign in / Create account) -->
+    <div class="modal" id="authModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <div class="modal-backdrop" data-close></div>
 
-  const codeForm = document.getElementById('code-form');
-  const codeInput = document.getElementById('code-input');
-  const codeStatus = document.getElementById('code-status');
-  const codeSubmit = document.getElementById('code-submit');
-  const purchaseOptions = document.getElementById('purchase-options');
+      <div class="modal-panel" role="document">
+        <button class="modal-close" type="button" aria-label="Close" data-close>✕</button>
 
-  const requestForm = document.getElementById('request-form');
-  const requestStatus = document.getElementById('request-status');
+        <div class="eyebrow">Access</div>
 
-  const showStatus = (el, message, type = '') => {
-    if (!el) return;
-    el.textContent = message;
-    el.className = 'status';
-    if (type) el.classList.add(type);
-    if (type === 'loading') el.classList.add('loading-dots');
-  };
+        <!-- Toggle -->
+        <div class="auth-toggle" role="tablist" aria-label="Authentication mode" style="margin-left: 5rem;">
+          <button class="auth-tab is-active" type="button" id="tab-signin" role="tab" aria-selected="true" aria-controls="panel-signin">
+            Sign in
+          </button>
+          <button class="auth-tab" type="button" id="tab-create" role="tab" aria-selected="false" aria-controls="panel-create">
+            Create account
+          </button>
+        </div>
 
-  // Local-only one-time-use simulation. Real enforcement requires server-side validation.
-  const getUsedCodes = () => {
-    try {
-      return JSON.parse(localStorage.getItem(USED_CODES_KEY) || '[]');
-    } catch {
-      return [];
-    }
-  };
+        <h2 class="h2" id="authTitle" style="margin:10px 0 6px;">Sign in</h2>
+        <p class="muted" id="authSubtitle" style="margin-bottom:18px;">Enter your credentials to continue.</p>
 
-  const setUsedCodes = codes => localStorage.setItem(USED_CODES_KEY, JSON.stringify(codes));
+        <!-- SIGN IN -->
+        <form class="modal-form" id="signinForm" autocomplete="off" aria-labelledby="tab-signin" role="tabpanel" aria-hidden="false" tabindex="0">
+          <label class="muted" for="signin-username">Username</label>
+          <input id="signin-username" name="username" type="text" placeholder="" minlength="3" required>
 
-  const redirectToPrivate = () => {
-    window.location.href = 'residue-private.html';
-  };
+          <label class="muted" for="signin-password" style="margin-top:12px;">Password</label>
+          <input id="signin-password" name="password" type="password" placeholder="••••••••" minlength="6" required>
 
-  const setUnlocked = (code, { redirect = true, showStatusMessage = true, showOptions = true, redirectDelay = 1000 } = {}) => {
-    if (showOptions) purchaseOptions?.classList.add('show');
-    if (showStatusMessage) showStatus(codeStatus, accessConfig.brandCopy.granted, 'success');
-    localStorage.setItem(STORAGE_KEY, 'true');
-    if (code) {
-      const used = new Set(getUsedCodes());
-      used.add(code.toUpperCase());
-      setUsedCodes([...used]);
-    }
-    if (redirect) setTimeout(redirectToPrivate, redirectDelay);
-  };
+          <div class="status modal-status" id="signinStatus" aria-live="polite" hidden></div>
 
-  // Replace this with a real API call when backend exists.
-  const validateCode = code => accessConfig.validCodes.includes(code.toUpperCase().trim());
+          <div class="modal-actions">
+            <button class="btn btn-outline" type="button" data-close>Cancel</button>
+            <button class="btn" type="submit">Sign in</button>
+          </div>
+        </form>
 
-  // Restore access state
-  if (localStorage.getItem(STORAGE_KEY) === 'true') {
-    // Restore silently; keep access state but don't show success UI.
-    setUnlocked(null, { redirect: false, showStatusMessage: false, showOptions: false });
-  }
+        <!-- CREATE ACCOUNT -->
+        <form class="modal-form" id="createForm" autocomplete="off" aria-labelledby="tab-create" role="tabpanel" aria-hidden="true" tabindex="-1" style="display:none;">
+          <label class="muted" for="create-username">Username</label>
+          <input id="create-username" name="username" type="text" placeholder="" minlength="3" required>
 
-  codeForm?.addEventListener('submit', evt => {
-    evt.preventDefault();
-    const value = codeInput.value.trim();
-    if (!value) {
-      showStatus(codeStatus, accessConfig.brandCopy.missing, 'error');
-      purchaseOptions?.classList.remove('show');
-      return;
-    }
-    if (!/^FOUNDER-\d{3}$/i.test(value)) {
-      showStatus(codeStatus, accessConfig.brandCopy.format, 'error');
-      purchaseOptions?.classList.remove('show');
-      return;
-    }
-    const upper = value.toUpperCase();
-    const isMaster = MASTER_CODES.includes(upper);
-    if (!isMaster && getUsedCodes().includes(upper)) {
-      showStatus(codeStatus, accessConfig.brandCopy.reused, 'error');
-      purchaseOptions?.classList.remove('show');
-      return;
-    }
+          <label class="muted" for="create-email" style="margin-top:12px;">Email</label>
+          <input id="create-email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required>
 
-    showStatus(codeStatus, accessConfig.brandCopy.checking, 'loading');
-    codeSubmit.disabled = true;
+          <label class="muted" for="create-password" style="margin-top:12px;">Password</label>
+          <input id="create-password" name="password" type="password" placeholder="••••••••" minlength="6" required>
 
-    setTimeout(() => {
-      const valid = validateCode(value);
-      if (valid) {
-        setUnlocked(isMaster ? null : upper, { redirectDelay: 1000 });
-      } else {
-        showStatus(codeStatus, accessConfig.brandCopy.invalid, 'error');
-        purchaseOptions?.classList.remove('show');
-        localStorage.removeItem(STORAGE_KEY);
-      }
-      codeSubmit.disabled = false;
-    }, 4000);
-  });
+          <label class="muted" for="create-confirm" style="margin-top:12px;">Confirm password</label>
+          <input id="create-confirm" name="confirm" type="password" placeholder="••••••••" minlength="6" required>
 
-  // Skip custom handling if an external action is set (e.g., Formspree)
-  requestForm?.addEventListener('submit', evt => {
-    if (requestForm.hasAttribute('data-external') && requestForm.getAttribute('action') && requestForm.getAttribute('action') !== '#') return;
-    evt.preventDefault();
-    const name = requestForm.name.value.trim();
-    const email = requestForm.email.value.trim();
-    const social = requestForm.social.value.trim();
-    const reason = requestForm.reason.value.trim();
+          <div class="status modal-status" id="createStatus" aria-live="polite" hidden></div>
 
-    if (!name || !email || !social || !reason) {
-      showStatus(requestStatus, accessConfig.brandCopy.requestMissing, 'error');
-      return;
-    }
+          <div class="modal-actions">
+            <button class="btn btn-outline" type="button" data-close>Cancel</button>
+            <button class="btn" type="submit">Create</button>
+          </div>
+        </form>
+      </div>
+    </div>
 
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailPattern.test(email)) {
-      showStatus(requestStatus, accessConfig.brandCopy.requestEmail, 'error');
-      return;
-    }
 
-    showStatus(requestStatus, accessConfig.brandCopy.requestSending);
+    <!--REQUEST ACCESS CODE GENERTED BY US-->
+    <section class="panel reveal section-tight" style="margin-top: 28px;" id="request-access">
+      <h3 style="margin-top: 0;">Request access</h3>
+      <p class="small muted">No code? Tell us your intent. Team requests welcome.</p>
+        <form id="request-form" class="stack quote-form" style="gap:12px;" data-external="true" data-endpoint="https://formsubmit.co/ajax/limrik.swanepoel@icloud.com" action="#" method="post">
+          <input type="hidden" name="_subject" value="Residue Access Request">
+          <input type="hidden" name="_template" value="table">
+          <input type="hidden" name="_next" value="/thank-you.html">
+          <input type="text" name="_honey" style="display:none">
+        <label for="name">Name</label>
+        <input id="name" name="name" placeholder="Name" required>
 
-    // Simulate network call. Replace with POST to your backend endpoint.
-    setTimeout(() => {
-      showStatus(requestStatus, accessConfig.brandCopy.requestReceived, 'success');
-      requestForm.reset();
-    }, 800);
-  });
+        <label for="email">Email</label>
+        <input id="email" type="email" name="email" placeholder="email@domain" required>
 
-  // Wire product links from config
-  if (purchaseOptions) {
-    const links = purchaseOptions.querySelectorAll('a');
-    links.forEach(link => {
-      const label = link.textContent.toLowerCase();
-      if (label.includes('core')) link.href = accessConfig.productLinks.core;
-      if (label.includes('pair')) link.href = accessConfig.productLinks.pair;
-      if (label.includes('set')) link.href = accessConfig.productLinks.set;
-    });
-  }
-})();
+        <label for="social">Instagram / LinkedIn</label>
+        <input id="social" name="social" placeholder="@handle or link" required>
+
+        <label for="reason">Intent</label>
+        <textarea id="reason" name="reason" placeholder="What you need" required></textarea>
+
+        <label for="team">Team size (optional)</label>
+        <input id="team" name="team" type="number" min="1" placeholder="10">
+
+        <button type="submit" class="btn">Request</button>
+        <div class="status" id="request-status" aria-live="polite"></div>
+      </form>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">Controlled access. Quiet distribution.</div>
+  </footer>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
+
