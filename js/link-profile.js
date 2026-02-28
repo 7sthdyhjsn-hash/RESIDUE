@@ -1,100 +1,58 @@
+// Thin wrapper: prefer Supabase-backed render from link-app.js; fallback to local storage preview.
 window.addEventListener('DOMContentLoaded', () => {
+  if (window.linktree?.renderPublicProfile) {
+    window.linktree.renderPublicProfile();
+    return;
+  }
+
+  // Fallback for file:// or missing Supabase config (local preview)
   const qs = new URLSearchParams(window.location.search);
   const slug = (qs.get('u') || '').trim().toLowerCase();
-  const isPreview = qs.get('preview') === '1';
+  const overlay = document.getElementById('lt-overlay');
+  const hideOverlay = () => overlay?.classList.add('hide');
+
   const profileKey = `residue_link_profile_${slug}`;
   const galleryKey = `residue_link_gallery_${slug}`;
   const musicKey = `residue_link_music_${slug}`;
+  let profile = null;
+  try { profile = JSON.parse(localStorage.getItem(profileKey) || 'null'); } catch {}
+  let gallery = [];
+  try { gallery = JSON.parse(localStorage.getItem(galleryKey) || '[]'); } catch {}
+  let music = [];
+  try { music = JSON.parse(localStorage.getItem(musicKey) || '[]'); } catch {}
 
-  if (isPreview) {
-    document.body.classList.add('preview-mode');
-  }
-
-  const overlay = document.getElementById('lt-overlay');
-  overlay?.removeAttribute('hidden');
-
-  const hideOverlay = () => {
-    if (!overlay) return;
-    overlay.classList.add('hide');
-    setTimeout(() => {
-      overlay.style.display = 'none';
-    }, 300);
-  };
-
-  const profile = (() => {
-    try {
-      return JSON.parse(localStorage.getItem(profileKey) || 'null');
-    } catch {
-      return null;
+  const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || ''; };
+  setText('lt-name', profile?.name || 'Your name');
+  setText('lt-title', profile?.title || '');
+  setText('lt-bio', profile?.bio || '');
+  const avatar = document.getElementById('lt-avatar');
+  if (avatar) avatar.src = profile?.avatar_url || 'https://placehold.co/220x220?text=Profile';
+  const linksWrap = document.getElementById('lt-links');
+  if (linksWrap) {
+    linksWrap.innerHTML = '';
+    (profile?.links || []).forEach(link => {
+      const a = document.createElement('a');
+      a.href = link.url;
+      a.textContent = link.label || link.url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      linksWrap.appendChild(a);
+    });
+    if (gallery?.length) {
+      const a = document.createElement('a');
+      a.href = `gallery.html?u=${encodeURIComponent(slug)}`;
+      a.textContent = 'View Gallery';
+      a.className = 'lt-gallery-btn';
+      linksWrap.appendChild(a);
     }
-  })();
-
-  const galleryImages = (() => {
-    try {
-      const data = JSON.parse(localStorage.getItem(galleryKey) || '[]');
-      return Array.isArray(data) ? data : [];
-    } catch {
-      return [];
-    }
-  })();
-
-  const musicTracks = (() => {
-    try {
-      const data = JSON.parse(localStorage.getItem(musicKey) || '[]');
-      return Array.isArray(data) ? data : [];
-    } catch {
-      return [];
-    }
-  })();
-
-  const setText = (id, value) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = value || '';
-  };
-
-  if (profile) {
-    setText('lt-name', profile.name || 'Your name');
-    setText('lt-title', profile.title || '');
-    setText('lt-bio', profile.bio || '');
-
-    const avatar = document.getElementById('lt-avatar');
-    if (avatar) {
-      avatar.src = profile.avatar_url || 'https://placehold.co/220x220?text=Profile';
-    }
-
-    const linksWrap = document.getElementById('lt-links');
-    if (linksWrap) {
-      linksWrap.innerHTML = '';
-      const links = Array.isArray(profile.links) ? profile.links : [];
-      links.forEach(link => {
-        const a = document.createElement('a');
-        a.href = link.url;
-        a.textContent = link.label || link.url;
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-        linksWrap.appendChild(a);
-      });
-
-      if (galleryImages.length) {
-        const galleryBtn = document.createElement('a');
-        galleryBtn.href = `gallery.html?u=${encodeURIComponent(slug)}`;
-        galleryBtn.textContent = 'View Gallery';
-        galleryBtn.className = 'lt-gallery-btn';
-        linksWrap.appendChild(galleryBtn);
-      }
-
-      if (musicTracks.length) {
-        const musicBtn = document.createElement('a');
-        musicBtn.href = `music.html?u=${encodeURIComponent(slug)}`;
-        musicBtn.textContent = 'View Music';
-        musicBtn.className = 'lt-gallery-btn';
-        linksWrap.appendChild(musicBtn);
-      }
+    if (music?.length) {
+      const a = document.createElement('a');
+      a.href = `music.html?u=${encodeURIComponent(slug)}`;
+      a.textContent = 'View Music';
+      a.className = 'lt-gallery-btn';
+      linksWrap.appendChild(a);
     }
   }
 
-  const yearEl = document.getElementById('year');
-  if (yearEl) yearEl.textContent = new Date().getFullYear();
-
-  setTimeout(hideOverlay, 700);
+  setTimeout(hideOverlay, 600);
 });
