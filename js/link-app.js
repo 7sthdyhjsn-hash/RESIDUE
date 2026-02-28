@@ -417,11 +417,30 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
     return div;
   }
 
+  function buildWhatsappLink() {
+    const numInput = document.getElementById('whatsapp-number');
+    const templateSelect = document.getElementById('whatsapp-template');
+    const customMsg = document.getElementById('whatsapp-custom')?.value.trim();
+    const rawNumber = (numInput?.value || '').replace(/[^\d]/g, '');
+    if (!rawNumber) return null;
+    const selected = templateSelect?.value || '';
+    const text = (selected === 'CUSTOM' ? customMsg : selected) || '';
+    const encoded = text ? `?text=${encodeURIComponent(text)}` : '';
+    return {
+      label: 'WhatsApp',
+      url: `https://wa.me/${rawNumber}${encoded}`
+    };
+  }
+
   function collectLinks() {
+    const linksOut = [];
+    const waLink = buildWhatsappLink();
+    if (waLink?.url) linksOut.push({ ...waLink, sort: linksOut.length });
+
     const inputs = Array.from(document.querySelectorAll('.lt-link-row input'));
     if (!inputs.length) {
       const socialIds = ['social', 'social-2', 'social-3', 'social-4', 'social-5', 'social-6'];
-      return socialIds
+      const socialLinks = socialIds
         .map(id => document.getElementById(id))
         .filter(Boolean)
         .map(input => (input.value || '').trim())
@@ -436,6 +455,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
           } catch {}
           return { label, url: withProtocol, sort: i };
         });
+      return socialLinks.length ? linksOut.concat(socialLinks.map((l, i) => ({ ...l, sort: linksOut.length + i }))) : linksOut;
     }
 
     const grouped = {};
@@ -445,7 +465,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
       grouped[idx] = grouped[idx] || { label: '', url: '' };
       grouped[idx][field] = input.value.trim();
     });
-    return Object.values(grouped)
+    const manualLinks = Object.values(grouped)
       .filter(l => l.label || l.url)
       .map(link => {
         let url = link.url || '';
@@ -468,6 +488,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
       .filter(l => l.url)
       .slice(0, MAX_LINKS)
       .map((l, i) => ({ ...l, sort: i }));
+
+    return linksOut.concat(manualLinks.map((l, i) => ({ ...l, sort: linksOut.length + i })));
   }
 
   function bindEditorActions() {
@@ -480,6 +502,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
     const logoInput = document.getElementById('logo');
     const avatarUrlInput = document.getElementById('lt-avatar-url');
     const saveStatusEl = document.getElementById('lt-save-status');
+    const waTemplate = document.getElementById('whatsapp-template');
+    const waCustom = document.getElementById('whatsapp-custom');
 
     const handleLogoChange = async () => {
       const file = logoInput?.files?.[0];
@@ -503,6 +527,14 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
       }
     };
     logoInput?.addEventListener('change', handleLogoChange);
+    const toggleWaCustom = () => {
+      if (!waTemplate || !waCustom) return;
+      const isCustom = waTemplate.value === 'CUSTOM';
+      waCustom.style.display = isCustom ? 'block' : 'none';
+      if (!isCustom) waCustom.value = '';
+    };
+    waTemplate?.addEventListener('change', toggleWaCustom);
+    toggleWaCustom();
 
     const closePreviewModal = () => {
       if (!previewModal) return;
@@ -841,5 +873,3 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
     }
   };
 })();
-
-

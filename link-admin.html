@@ -100,6 +100,21 @@
           <input id="social-6" name="x" type="url" placeholder="https://x.com/in/you (optional)" data-auto-url>
         </div>
 
+        <div class="form-group" style="margin-top: 12px;">
+          <div class="lt-label">WhatsApp quick link</div>
+          <p class="lt-note">Enter your mobile (country code + number). We’ll build the WhatsApp click-to-chat URL for you.</p>
+          <input class="lt-input" id="whatsapp-number" name="whatsapp-number" type="tel" placeholder="+27 82 123 4567" inputmode="tel">
+          <label class="lt-note" for="whatsapp-template" style="margin-top:10px;">Preset first message</label>
+          <select class="lt-input" id="whatsapp-template" name="whatsapp-template">
+            <option value="Hi, I’m interested in Residue. Can you share details?">Interest in Residue</option>
+            <option value="Hi, could you share your email so I can send details?">Request email</option>
+            <option value="Hi, can we book a quick call?">Book a call</option>
+            <option value="Hi, please send me your contact details.">Send contact details</option>
+            <option value="CUSTOM">Custom message…</option>
+          </select>
+          <textarea class="lt-textarea" id="whatsapp-custom" placeholder="Custom WhatsApp message (optional)"></textarea>
+        </div>
+
 
         <label for="mark">Upload Gallery Images (up to 50 photos) (optional)</label>
         <input id="mark" name="mark" type="file" accept="image/*" multiple>
@@ -150,4 +165,3 @@
   </script>
 </body>
 </html>
-
