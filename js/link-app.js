@@ -482,7 +482,8 @@ import { residueTelemetry } from './supabase-telemetry.js';
     }
     // Fetch links; add hidden default false so toggles work locally
     const { data: links } = await supabase.from('links').select('*').eq('profile_id', user.id).order('sort', { ascending: true });
-    const hydratedLinks = (links || []).map(l => ({ ...l, hidden: l.hidden ?? false }));
+    const { meta, normalLinks } = extractMetaFromLinks(links || []);
+    const hydratedLinks = (normalLinks || []).map(l => ({ ...l, hidden: parseBool(meta[`hidden_${l.sort}`], false) }));
     fillEditor(profile || {}, hydratedLinks);
     const codeRow = await fetchOrCreateCode(user.id);
     renderCodePanel(codeRow);
