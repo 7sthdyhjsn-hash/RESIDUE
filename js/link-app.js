@@ -58,19 +58,31 @@ import { residueTelemetry } from './supabase-telemetry.js';
   /* Public profile rendering */
   async function renderPublicProfile() {
     const slug = qs.get('u');
+    const isPreview = qs.get('preview') === '1';
     const overlay = document.getElementById('lt-overlay');
     const finishOverlay = () => overlay?.classList.remove('active');
     if (overlay) {
       overlay.style.display = 'flex';
       overlay.classList.add('active');
     }
-    if (isFileProtocol) {
-      showPlaceholder('Run via http:// (not file://) so Supabase works.');
+    const localFallback = loadLocalProfile(slug);
+    if (isPreview && localFallback) {
+      const { meta, normalLinks } = extractMetaFromLinks(localFallback.links || []);
+      fillPublic(localFallback.profile || {}, meta);
+      renderLinks('lt-links', normalLinks || []);
       finishOverlay();
+      if (overlay) setTimeout(() => { overlay.style.display = 'none'; }, 220);
       return;
     }
-    if (!supabase) {
-      showPlaceholder('Missing Supabase configuration.');
+
+    if (isFileProtocol || !supabase) {
+      if (localFallback) {
+        const { meta, normalLinks } = extractMetaFromLinks(localFallback.links || []);
+        fillPublic(localFallback.profile || {}, meta);
+        renderLinks('lt-links', normalLinks || []);
+      } else {
+        showPlaceholder('Run via http:// (not file://) or add data first.');
+      }
       finishOverlay();
       return;
     }
@@ -80,14 +92,21 @@ import { residueTelemetry } from './supabase-telemetry.js';
       return;
     }
     const { data, error } = await supabase.from('profiles').select('*').eq('slug', slug).single();
+    let profile = data;
     if (error || !data) {
-      showPlaceholder('Profile not found. Tap manage to create it.');
-      finishOverlay();
-      return;
+      profile = localFallback?.profile;
+      if (!profile) {
+        showPlaceholder('Profile not found. Tap manage to create it.');
+        finishOverlay();
+        return;
+      }
     }
-    const { data: links } = await supabase.from('links').select('*').eq('profile_id', data.id).order('sort', { ascending: true });
+    const { data: linksData } = profile?.id
+      ? await supabase.from('links').select('*').eq('profile_id', profile.id).order('sort', { ascending: true })
+      : { data: [] };
+    const links = (linksData && linksData.length ? linksData : (localFallback?.links || []));
     const { meta, normalLinks } = extractMetaFromLinks(links || []);
-    fillPublic(data, meta);
+    fillPublic(profile || {}, meta);
     renderLinks('lt-links', normalLinks || []);
     finishOverlay();
     if (overlay) setTimeout(() => { overlay.style.display = 'none'; }, 220);
@@ -701,11 +720,14 @@ import { residueTelemetry } from './supabase-telemetry.js';
             const supaLinks = links.map(l => ({
               label: l.label,
               url: l.url,
-              hidden: !!l.hidden,
               sort: l.sort,
               profile_id: session.user.id
             }));
-            await supabase.from('links').insert(supaLinks);
+            const { error: lErr } = await supabase.from('links').insert(supaLinks);
+            if (lErr) {
+              showStatusEl(statusEl, lErr.message, 'error');
+              return;
+            }
           }
         }
 
@@ -782,6 +804,17 @@ import { residueTelemetry } from './supabase-telemetry.js';
     el.textContent = message;
     el.className = 'lt-status';
     if (type) el.classList.add(type);
+  }
+
+  function loadLocalProfile(slug) {
+    if (!slug) return null;
+    try {
+      const profile = JSON.parse(localStorage.getItem(localProfileKey(slug)) || 'null');
+      const links = Array.isArray(profile?.links) ? profile.links : [];
+      return { profile, links };
+    } catch {
+      return null;
+    }
   }
 
   /* Avatar file handling */
