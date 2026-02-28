@@ -16,6 +16,7 @@ body.lt-page {
   color: #fff;
   overscroll-behavior: contain;
   touch-action: pan-y;
+  overflow: hidden;
 
   /* soften the wallpaper but keep it visible */
   background-image:
@@ -51,7 +52,7 @@ body.lt-page.preview-mode::-webkit-scrollbar {
 .lt-card {
   width: calc(100% - 40px);
   max-width: 600px;
-  margin: 28px 20px 20px;
+  margin: 12px 20px;
   padding: 28px;
   border-radius: 18px;
 
@@ -62,9 +63,9 @@ body.lt-page.preview-mode::-webkit-scrollbar {
   box-shadow: 0 20px 60px rgba(0,0,0,0.6);
 
   position: relative;
-  max-height: 92vh;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
+  height: calc(100vh - 24px);
+  max-height: calc(100vh - 24px);
+  overflow: hidden;
 }
 
 /* =========================
@@ -172,23 +173,7 @@ body.lt-page.preview-mode::-webkit-scrollbar {
    Footer inside card
    ========================= */
 .lt-footer {
-  margin-top: 40px;
-
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  font-size: 13px;
-}
-
-.lt-footer a {
-  color: rgba(255,255,255,0.9);
-  text-decoration: none;
-  letter-spacing: 1px;
-}
-
-.lt-footer a:hover {
-  color: #f2d5a3;
+  display: none !important;
 }
 
 /* =========================

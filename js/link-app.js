@@ -273,6 +273,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
             showStatusEl(statusEl, 'Success', 'success');
             toggleEditor(true);
             setAuthOnly(false);
+            loadLocalDraft();
             closeResetModal();
             return;
           }
@@ -287,6 +288,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
             showStatusEl(statusEl, 'Success', 'success');
             toggleEditor(true);
             setAuthOnly(false);
+            loadLocalDraft();
             closeResetModal();
             return;
           }
@@ -374,6 +376,24 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
     if (editorCard) {
       editorCard.hidden = !show;
       editorCard.style.display = show ? 'grid' : 'none';
+    }
+  }
+
+  function loadLocalDraft() {
+    const lastKey = localStorage.getItem('residue_link_last_profile_key');
+    const keys = Object.keys(localStorage);
+    const pickProfile = key => {
+      if (!key) return null;
+      try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch { return null; }
+    };
+    let profile = pickProfile(lastKey);
+    if (!profile) {
+      const anyKey = keys.find(k => k.startsWith(LOCAL_PROFILE_KEY_PREFIX));
+      profile = pickProfile(anyKey);
+    }
+    if (profile) {
+      const links = Array.isArray(profile.links) ? profile.links : [];
+      fillEditor(profile, links);
     }
   }
 
@@ -717,7 +737,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
           slug: profile.slug,
           links
         };
-        localStorage.setItem(localProfileKey(profile.slug), JSON.stringify(localProfile));
+        const draftKey = localProfileKey(profile.slug);
+        localStorage.setItem(draftKey, JSON.stringify(localProfile));
+        localStorage.setItem('residue_link_last_profile_key', draftKey);
         localStorage.setItem(localGalleryKey(profile.slug), JSON.stringify(galleryImages));
         localStorage.setItem(localMusicKey(profile.slug), JSON.stringify(musicTracks));
 
