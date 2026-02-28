@@ -360,6 +360,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
     if (!profile) {
       await ensureProfileRow(user);
     }
+    // Fetch contact links first
     const { data: links } = await supabase.from('links').select('*').eq('profile_id', user.id).order('sort', { ascending: true });
     fillEditor(profile || {}, links || []);
     const codeRow = await fetchOrCreateCode(user.id);
@@ -435,19 +436,22 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
     if (!wrap) return;
     wrap.innerHTML = '';
     (links || []).slice(0, MAX_LINKS).forEach((link, i) => {
-      wrap.appendChild(linkRow(link.label, link.url, i));
+      wrap.appendChild(linkRow(link.label, link.url, i, link.hidden));
     });
     for (let i = (links || []).length; i < MAX_LINKS; i++) {
-      wrap.appendChild(linkRow('', '', i));
+      wrap.appendChild(linkRow('', '', i, false));
     }
   }
 
-  function linkRow(label, url, index) {
+  function linkRow(label, url, index, hidden = false) {
     const div = document.createElement('div');
     div.className = 'lt-link-row';
     div.innerHTML = `
       <input class="lt-input" placeholder="Label" value="${label || ''}" data-idx="${index}" data-field="label">
       <input class="lt-input" placeholder="https://link" value="${url || ''}" data-idx="${index}" data-field="url">
+      <label class="lt-note" style="display:flex;align-items:center;gap:6px;">
+        <input type="checkbox" data-idx="${index}" data-field="hidden" ${hidden ? '' : 'checked'}> Show
+      </label>
     `;
     return div;
   }
@@ -469,6 +473,19 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
   function collectLinks() {
     const linksOut = [];
+
+    // Contact toggles
+    const sw = document.getElementById('show-website');
+    const sp = document.getElementById('show-phone');
+    const se = document.getElementById('show-email');
+    const website = getValue('website');
+    const phone = getValue('phone');
+    const email = getValue('email-config');
+    if (website) linksOut.push({ label: 'Website', url: website.startsWith('http') ? website : `https://${website}`, hidden: sw ? !sw.checked : false, sort: linksOut.length });
+    if (phone) linksOut.push({ label: 'Call', url: `tel:${phone}`, hidden: sp ? !sp.checked : false, sort: linksOut.length });
+    if (email) linksOut.push({ label: 'Email', url: `mailto:${email}`, hidden: se ? !se.checked : false, sort: linksOut.length });
+
+    // WhatsApp quick link
     const waLink = buildWhatsappLink();
     if (waLink?.url) linksOut.push({ ...waLink, sort: linksOut.length });
 
@@ -488,17 +505,18 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
             const base = (parsed.hostname || '').replace('www.', '').split('.')[0] || label;
             label = base.charAt(0).toUpperCase() + base.slice(1);
           } catch {}
-          return { label, url: withProtocol, sort: i };
+          return { label, url: withProtocol, sort: linksOut.length + i };
         });
-      return socialLinks.length ? linksOut.concat(socialLinks.map((l, i) => ({ ...l, sort: linksOut.length + i }))) : linksOut;
+      return linksOut.concat(socialLinks);
     }
 
     const grouped = {};
     inputs.forEach(input => {
       const idx = input.dataset.idx;
       const field = input.dataset.field;
-      grouped[idx] = grouped[idx] || { label: '', url: '' };
-      grouped[idx][field] = input.value.trim();
+      grouped[idx] = grouped[idx] || { label: '', url: '', hidden: false };
+      if (field === 'hidden') grouped[idx].hidden = !input.checked;
+      else grouped[idx][field] = input.value.trim();
     });
     const manualLinks = Object.values(grouped)
       .filter(l => l.label || l.url)
@@ -518,13 +536,13 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
             label = 'Link';
           }
         }
-        return { label: label || 'Link', url };
+        return { label: label || 'Link', url, hidden: link.hidden };
       })
       .filter(l => l.url)
       .slice(0, MAX_LINKS)
-      .map((l, i) => ({ ...l, sort: i }));
+      .map((l, i) => ({ ...l, sort: linksOut.length + i }));
 
-    return linksOut.concat(manualLinks.map((l, i) => ({ ...l, sort: linksOut.length + i })));
+    return linksOut.concat(manualLinks);
   }
 
   function bindEditorActions() {
@@ -588,15 +606,21 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
       const name = getValue('full-name') || 'Your name';
       const role = getValue('role') || '';
       const bio = getValue('lt-bio') || '';
-      const email = getValue('email-config');
-      const phone = getValue('phone');
-      const website = getValue('website');
       const links = collectLinks();
-      if (website) links.unshift({ label: 'Website', url: /^https?:\/\//i.test(website) ? website : `https://${website}` });
-      if (phone) links.unshift({ label: 'Call', url: `tel:${phone}` });
-      if (email) links.unshift({ label: 'Email', url: `mailto:${email}` });
+      const theme = document.querySelector('input[name="lt-theme"]:checked')?.value || 'dark';
 
-      let avatarUrl = getValue('lt-avatar-url') || 'https://placehold.co/220x220?text=Profile';
+      // Avatar: prefer saved value, then current file, then placeholder
+      let avatarUrl = getValue('lt-avatar-url') || '';
+      const logoInput = document.getElementById('logo');
+      const logoFile = logoInput?.files?.[0];
+      if (!avatarUrl && logoFile && (logoFile.type || '').startsWith('image/')) {
+        try {
+          avatarUrl = await fileToDataURL(logoFile);
+        } catch {
+          avatarUrl = '';
+        }
+      }
+      if (!avatarUrl) avatarUrl = 'https://placehold.co/220x220?text=Profile';
 
       const galleryInput = document.getElementById('mark');
       const imageFiles = galleryInput?.files
@@ -618,7 +642,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
         title: role,
         bio,
         avatar_url: avatarUrl,
-        theme: 'dark',
+        theme,
         slug: PREVIEW_SLUG,
         links
       };
@@ -652,12 +676,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
     const clampSelectedFiles = (input, max, label) => {
       if (!input?.files || input.files.length <= max) return;
-      const limited = Array.from(input.files).slice(0, max);
-      try {
-        const dt = new DataTransfer();
-        limited.forEach(file => dt.items.add(file));
-        input.files = dt.files;
-      } catch {
+        const limited = Array.from(input.files).slice(0, max);
+        try {
+          const dt = new DataTransfer();
+          limited.forEach(file => dt.items.add(file));
+          input.files = dt.files;
+        } catch {
         // Fallback: keep original list in input, enforce at save-time.
       }
       window.alert(`${label} is limited to ${max} files. Extra files were ignored.`);
