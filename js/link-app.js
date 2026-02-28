@@ -59,15 +59,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
   async function renderPublicProfile() {
     const slug = qs.get('u');
     const overlay = document.getElementById('lt-overlay');
-    const overlayMin = 3000;
-    const start = performance.now();
-    const finishOverlay = () => {
-      if (!overlay) return;
-      const elapsed = performance.now() - start;
-      const remaining = Math.max(0, overlayMin - elapsed);
-      setTimeout(() => overlay.classList.remove('active'), remaining);
-    };
-    if (overlay) overlay.classList.add('active');
+    const finishOverlay = () => overlay?.classList.remove('active');
+    overlay?.classList.add('active');
     if (isFileProtocol) {
       showPlaceholder('Run via http:// (not file://) so Supabase works.');
       finishOverlay();
