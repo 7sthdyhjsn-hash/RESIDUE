@@ -186,6 +186,26 @@ import { residueTelemetry } from './supabase-telemetry.js';
     sort
   });
 
+  function inferLabel(url, fallback) {
+    if (!url) return fallback || 'Link';
+    const u = url.replace(/^mailto:/i, 'mailto:').replace(/^tel:/i, 'tel:');
+    if (u.startsWith('mailto:')) return 'Email';
+    if (u.startsWith('tel:')) return 'Call';
+    try {
+      const host = new URL(u.startsWith('http') ? u : `https://${u}`).hostname.toLowerCase();
+      if (host.includes('linkedin')) return 'LinkedIn';
+      if (host.includes('instagram')) return 'Instagram';
+      if (host.includes('whatsapp') || host.includes('wa.me')) return 'WhatsApp';
+      if (host.includes('youtube')) return 'YouTube';
+      if (host.includes('facebook')) return 'Facebook';
+      if (host.includes('x.com') || host.includes('twitter')) return 'X';
+      if (host.includes('residue')) return 'Residue';
+      if (host.includes('spotify')) return 'Spotify';
+      if (host.includes('apple')) return 'Apple';
+    } catch {}
+    return fallback || 'Link';
+  }
+
   function getLocalUsers() {
     try {
       return JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
@@ -526,9 +546,6 @@ import { residueTelemetry } from './supabase-telemetry.js';
     setToggle('show-phone', true);
     setToggle('show-email', true);
     setToggle('show-whatsapp', true);
-    setToggle('show-slug', parseBool(meta.show_slug, true));
-    setToggle('show-whatsapp-template', parseBool(meta.show_whatsapp_template, true));
-    setToggle('show-whatsapp-custom', parseBool(meta.show_whatsapp_custom, true));
     socialConfig.forEach(s => setToggle(s.toggle, true));
 
     normalLinks.forEach(link => {
