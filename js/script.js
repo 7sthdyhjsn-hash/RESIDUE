@@ -109,6 +109,10 @@
 
   // Access form inline success
   const handleFormSubmit = (form, statusEl, successMessage) => {
+    // Prevent multiple listeners when the same form matches several selectors
+    if (form.dataset.formHandled === 'true') return;
+    form.dataset.formHandled = 'true';
+
     form.addEventListener('submit', async evt => {
       const isExternal = form.dataset.external === 'true';
       if (!isExternal) {
@@ -376,8 +380,8 @@
       setTimeout(() => {
         closeAuthModal();
         createForm.reset();
-        // OPTIONAL redirect:
-        // window.location.href = "residue-private.html";
+        // Take new users straight into the private page (same as sign-in)
+        window.location.href = PRIVATE_PAGE;
       }, 600);
     });
 

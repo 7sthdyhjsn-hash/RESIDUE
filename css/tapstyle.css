@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap');
+
 /* =========================
    Reset
    ========================= */
@@ -13,11 +15,16 @@ body.lt-page {
   font-family: 'Space Grotesk', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
   color: #fff;
 
-  /* Background repeats 2 per row */
-  background-image: url("img/profile-link-background.png");
+  /* soften the wallpaper but keep it visible */
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(255,255,255,0.12), transparent 32%),
+    radial-gradient(circle at 80% 10%, rgba(255,255,255,0.08), transparent 30%),
+    linear-gradient(180deg, rgba(0,0,0,0.28), rgba(0,0,0,0.55)),
+    url("img/profile-link-background.png");
   background-repeat: repeat;
-  background-size: 50% auto;   /* 2 across */
-  background-position: top left;
+  background-size: 50% auto, 50% auto, cover, 50% auto;
+  background-position: center, center, center, top left;
+  background-blend-mode: normal, normal, multiply, normal;
 
   display: flex;
   flex-direction: column;
@@ -46,8 +53,9 @@ body.lt-page.preview-mode::-webkit-scrollbar {
   padding: 28px;
   border-radius: 18px;
 
-  background: #000;   /* SOLID BLACK */
-  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.78);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.1);
 
   box-shadow: 0 20px 60px rgba(0,0,0,0.6);
 
@@ -64,7 +72,7 @@ body.lt-page.preview-mode::-webkit-scrollbar {
 
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
 }
 
 .lt-brand {
@@ -72,21 +80,16 @@ body.lt-page.preview-mode::-webkit-scrollbar {
   align-items: center;
   gap: 10px;
 
-  font-size: 13px;
-  letter-spacing: 4px;
-  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 5px;
+  font-weight: 700;
   text-transform: uppercase;
 }
 
 .lt-bar {
-  width: 36px;
+  width: 40px;
   height: 2px;
   background: #d6b26b;
-}
-
-.lt-note {
-  font-size: 13px;
-  opacity: 0.7;
 }
 
 /* =========================
@@ -105,14 +108,17 @@ body.lt-page.preview-mode::-webkit-scrollbar {
   display: inline-flex;
   margin: 0 0 18px 0; 
 
-  background: #111;
-  border: 1px solid rgba(255,255,255,0.15);
+  background: #0d0d0d;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
 }
 
 .lt-name {
   margin: 0;
-  font-size: 38px;
+  font-size: 36px;
   font-weight: 700;
+  letter-spacing: 0.4px;
 }
 
 .lt-title,
@@ -171,13 +177,13 @@ body.lt-page.preview-mode::-webkit-scrollbar {
 }
 
 .lt-footer a {
-  color: rgba(255,255,255,0.8);
-  text-decoration: underline;
-  text-underline-offset: 4px;
+  color: rgba(255,255,255,0.9);
+  text-decoration: none;
+  letter-spacing: 1px;
 }
 
 .lt-footer a:hover {
-  color: #fff;
+  color: #f2d5a3;
 }
 
 /* =========================

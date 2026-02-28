@@ -39,6 +39,7 @@
 
   const requestForm = document.getElementById('request-form');
   const requestStatus = document.getElementById('request-status');
+  let isSubmittingRequest = false;
 
   const showStatus = (el, message, type = '') => {
     if (!el) return;
@@ -122,9 +123,10 @@
   });
 
   // Skip custom handling if an external action is set (e.g., Formspree)
-  requestForm?.addEventListener('submit', evt => {
-    if (requestForm.hasAttribute('data-external') && requestForm.getAttribute('action') && requestForm.getAttribute('action') !== '#') return;
+  requestForm?.addEventListener('submit', async evt => {
     evt.preventDefault();
+    if (isSubmittingRequest) return; // guard against double submit
+
     const name = requestForm.name.value.trim();
     const email = requestForm.email.value.trim();
     const social = requestForm.social.value.trim();
@@ -141,13 +143,31 @@
       return;
     }
 
+    const submitBtn = requestForm.querySelector('[type="submit"]');
+    submitBtn?.setAttribute('disabled', 'true');
+    isSubmittingRequest = true;
     showStatus(requestStatus, accessConfig.brandCopy.requestSending);
 
-    // Simulate network call. Replace with POST to your backend endpoint.
-    setTimeout(() => {
+    const endpoint = requestForm.dataset.endpoint || requestForm.getAttribute('action');
+
+    try {
+      if (endpoint && endpoint !== '#') {
+        const formData = new FormData(requestForm);
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Accept': 'application/json' },
+          body: formData
+        });
+        if (!res.ok) throw new Error('Request failed');
+      }
       showStatus(requestStatus, accessConfig.brandCopy.requestReceived, 'success');
       requestForm.reset();
-    }, 800);
+    } catch (err) {
+      showStatus(requestStatus, err.message || 'Could not send request.', 'error');
+    } finally {
+      isSubmittingRequest = false;
+      submitBtn?.removeAttribute('disabled');
+    }
   });
 
   // Wire product links from config

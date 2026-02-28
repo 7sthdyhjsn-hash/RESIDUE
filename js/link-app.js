@@ -477,6 +477,32 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
     const previewCloseEls = previewModal?.querySelectorAll('[data-preview-close]');
     const previewFrame = document.getElementById('lt-preview-frame');
     const PREVIEW_SLUG = 'preview-card';
+    const logoInput = document.getElementById('logo');
+    const avatarUrlInput = document.getElementById('lt-avatar-url');
+    const saveStatusEl = document.getElementById('lt-save-status');
+
+    const handleLogoChange = async () => {
+      const file = logoInput?.files?.[0];
+      if (!file) {
+        if (avatarUrlInput) avatarUrlInput.value = '';
+        return;
+      }
+      if (!(file.type || '').startsWith('image/')) {
+        showStatusEl(saveStatusEl, 'Logo must be an image.', 'error');
+        logoInput.value = '';
+        return;
+      }
+      try {
+        // Compress to <=700KB and max 900px on the largest side
+        const optimized = await compressImage(file, 700 * 1024, 900);
+        if (avatarUrlInput) avatarUrlInput.value = optimized;
+        showStatusEl(saveStatusEl, 'Logo optimized.', 'success');
+      } catch (err) {
+        showStatusEl(saveStatusEl, err.message || 'Could not process logo.', 'error');
+        logoInput.value = '';
+      }
+    };
+    logoInput?.addEventListener('change', handleLogoChange);
 
     const closePreviewModal = () => {
       if (!previewModal) return;
@@ -503,16 +529,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
       if (phone) links.unshift({ label: 'Call', url: `tel:${phone}` });
       if (email) links.unshift({ label: 'Email', url: `mailto:${email}` });
 
-      const logoInput = document.getElementById('logo');
-      const logoFile = logoInput?.files?.[0];
-      let avatarUrl = 'https://placehold.co/220x220?text=Profile';
-      if (logoFile && (logoFile.type || '').startsWith('image/')) {
-        try {
-          avatarUrl = await fileToDataURL(logoFile);
-        } catch {
-          avatarUrl = 'https://placehold.co/220x220?text=Profile';
-        }
-      }
+      let avatarUrl = getValue('lt-avatar-url') || 'https://placehold.co/220x220?text=Profile';
 
       const galleryInput = document.getElementById('mark');
       const imageFiles = galleryInput?.files
@@ -824,6 +841,5 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
     }
   };
 })();
-
 
 
