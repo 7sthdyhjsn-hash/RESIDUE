@@ -666,8 +666,6 @@ import { residueTelemetry } from './supabase-telemetry.js';
     linksOut.push(metaLink('show_role', document.getElementById('show-role')?.checked ?? true, linksOut.length));
     linksOut.push(metaLink('show_bio', document.getElementById('show-bio')?.checked ?? true, linksOut.length));
     linksOut.push(metaLink('show_slug', document.getElementById('show-slug')?.checked ?? true, linksOut.length));
-    linksOut.push(metaLink('show_whatsapp_template', document.getElementById('show-whatsapp-template')?.checked ?? true, linksOut.length));
-    linksOut.push(metaLink('show_whatsapp_custom', document.getElementById('show-whatsapp-custom')?.checked ?? true, linksOut.length));
 
     return linksOut;
   }
@@ -806,7 +804,7 @@ import { residueTelemetry } from './supabase-telemetry.js';
       if (l.hidden) return;
       const a = document.createElement('a');
       a.href = l.url;
-      a.textContent = l.label || l.url;
+      a.textContent = inferLabel(l.url, l.label || l.url);
       a.className = 'lt-link';
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
