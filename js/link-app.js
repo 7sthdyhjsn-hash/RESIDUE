@@ -106,8 +106,9 @@ import { residueTelemetry } from './supabase-telemetry.js';
       : { data: [] };
     const links = (linksData && linksData.length ? linksData : (localFallback?.links || []));
     const { meta, normalLinks } = extractMetaFromLinks(links || []);
+    const hydratedLinks = (normalLinks || []).map(l => ({ ...l, hidden: parseBool(meta[`hidden_${l.sort}`], false) }));
     fillPublic(profile || {}, meta);
-    renderLinks('lt-links', normalLinks || []);
+    renderLinks('lt-links', hydratedLinks || []);
     finishOverlay();
     if (overlay) setTimeout(() => { overlay.style.display = 'none'; }, 220);
   }
@@ -185,6 +186,13 @@ import { residueTelemetry } from './supabase-telemetry.js';
     hidden: true,
     sort
   });
+
+  const applyHiddenMeta = (links) => {
+    const metaEntries = links.map((l, i) =>
+      metaLink(`hidden_${l.sort ?? i}`, l.hidden ? '1' : '0', links.length + i)
+    );
+    return links.concat(metaEntries);
+  };
 
   function inferLabel(url, fallback) {
     if (!url) return fallback || 'Link';
@@ -642,6 +650,9 @@ import { residueTelemetry } from './supabase-telemetry.js';
     const website = getValue('website');
     const phone = getValue('phone');
     const email = getValue('email-config');
+    if (!website && sw) sw.checked = false;
+    if (!phone && sp) sp.checked = false;
+    if (!email && se) se.checked = false;
     if (website) linksOut.push({ label: 'Website', url: website.startsWith('http') ? website : `https://${website}`, hidden: sw ? !sw.checked : false, sort: linksOut.length });
     if (phone) linksOut.push({ label: 'Call', url: `tel:${phone}`, hidden: sp ? !sp.checked : false, sort: linksOut.length });
     if (email) linksOut.push({ label: 'Email', url: `mailto:${email}`, hidden: se ? !se.checked : false, sort: linksOut.length });
@@ -652,9 +663,12 @@ import { residueTelemetry } from './supabase-telemetry.js';
 
     socialConfig.forEach(social => {
       const raw = getValue(social.id);
-      if (!raw) return;
-      const url = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
       const show = document.getElementById(social.toggle);
+      if (!raw) {
+        if (show) show.checked = false;
+        return;
+      }
+      const url = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
       linksOut.push({
         label: social.label,
         url,
@@ -733,7 +747,7 @@ import { residueTelemetry } from './supabase-telemetry.js';
           }
           await supabase.from('links').delete().eq('profile_id', session.user.id);
           if (links.length) {
-            const supaLinks = links.map(l => ({
+            const supaLinks = applyHiddenMeta(links).map(l => ({
               label: l.label,
               url: l.url,
               sort: l.sort,
@@ -754,7 +768,7 @@ import { residueTelemetry } from './supabase-telemetry.js';
           avatar_url: profile.avatar_url,
           theme: profile.theme,
           slug: profile.slug,
-          links
+          links: applyHiddenMeta(links)
         };
         const draftKey = localProfileKey(profile.slug);
         localStorage.setItem(draftKey, JSON.stringify(localProfile));
