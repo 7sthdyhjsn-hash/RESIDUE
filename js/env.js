@@ -1,1 +1,1 @@
-window.env = { SUPABASE_URL: 'https://vqqcgknwobmssgfuvfyq.supabase.co', SUPABASE_ANON_KEY: '' };
+window.env = { SUPABASE_URL: '', SUPABASE_ANON_KEY: '' };
