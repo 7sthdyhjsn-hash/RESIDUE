@@ -345,6 +345,15 @@ import { residueTelemetry } from './supabase-telemetry.js';
       .slice(0, 60);
   }
 
+  const RESERVED_SLUGS = new Set(['preview-card', 'preview', 'card-preview']);
+  function resolveSlug(rawSlug, fallbackSource = '') {
+    const cleaned = slugify(rawSlug || '');
+    if (!cleaned || RESERVED_SLUGS.has(cleaned)) {
+      return slugify(fallbackSource || '');
+    }
+    return cleaned;
+  }
+
   const localProfileKey = slug => `${LOCAL_PROFILE_KEY_PREFIX}${(slug || '').toLowerCase()}`;
 
   function bindAuth() {
@@ -636,8 +645,9 @@ import { residueTelemetry } from './supabase-telemetry.js';
     setValue('full-name', profile.name || '');
     setValue('role', profile.title || '');
     setValue('lt-bio', profile.bio || '');
-    setValue('lt-slug', profile.slug || '');
-    const publicUrl = `${window.location.origin}${window.location.pathname.replace(/link-admin\\.html$/, 'link-profile.html')}?u=${profile.slug || ''}`;
+    const resolvedProfileSlug = resolveSlug(profile.slug, profile.auth_email || profile.name || '');
+    setValue('lt-slug', resolvedProfileSlug || '');
+    const publicUrl = `${window.location.origin}${window.location.pathname.replace(/link-admin\\.html$/, 'link-profile.html')}?u=${resolvedProfileSlug || ''}`;
     const urlEl = document.getElementById('lt-public-url');
     if (urlEl) urlEl.textContent = publicUrl;
     const setToggle = (id, checked = true) => {
@@ -951,7 +961,10 @@ import { residueTelemetry } from './supabase-telemetry.js';
   }
   function collectProfilePayload(user) {
     const name = getValue('full-name') || getValue('lt-name');
-    const slug = getValue('lt-slug') || slugify(name || getValue('email-config'));
+    const slug = resolveSlug(
+      getValue('lt-slug'),
+      name || getValue('email-config') || normalizeEmail(user?.email)
+    );
     const title = getValue('role') || getValue('lt-title');
     const bio = getValue('lt-bio');
     const avatar_url = getValue('lt-avatar-url');
