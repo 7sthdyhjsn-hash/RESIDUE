@@ -29,6 +29,7 @@
       <h1 class="lt-name" id="lt-name">Loading…</h1>
       <p class="lt-title" id="lt-title"></p>
       <p class="lt-bio" id="lt-bio"></p>
+      <button class="lt-save-contact-btn" id="lt-save-contact-btn" type="button" disabled>Save Contact</button>
     </div>
 
     <div class="lt-links" id="lt-links"></div>
@@ -43,6 +44,17 @@
 
   <div class="lt-status lt-center" id="lt-status"></div>
 
-  
+  <div class="lt-contact-modal" id="lt-contact-consent" hidden>
+    <div class="lt-contact-modal__backdrop" id="lt-contact-backdrop"></div>
+    <div class="lt-contact-modal__panel" role="dialog" aria-modal="true" aria-labelledby="lt-contact-title">
+      <h2 id="lt-contact-title">Save Contact Details</h2>
+      <p id="lt-contact-message">You are requesting to save contact details to your device. Do you agree to continue?</p>
+      <div class="lt-contact-modal__actions">
+        <button class="lt-contact-btn lt-contact-btn--primary" id="lt-contact-agree" type="button">Agree</button>
+        <button class="lt-contact-btn lt-contact-btn--secondary" id="lt-contact-disagree" type="button">Disagree</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

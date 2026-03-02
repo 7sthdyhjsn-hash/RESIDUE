@@ -70,6 +70,7 @@ import { residueTelemetry } from './supabase-telemetry.js';
       const { meta, normalLinks } = extractMetaFromLinks(localFallback.links || []);
       fillPublic(localFallback.profile || {}, meta);
       renderLinks('lt-links', normalLinks || []);
+      setupContactDownload(localFallback.profile || {}, normalLinks || []);
       finishOverlay();
       if (overlay) setTimeout(() => { overlay.style.display = 'none'; }, 220);
       return;
@@ -80,6 +81,7 @@ import { residueTelemetry } from './supabase-telemetry.js';
         const { meta, normalLinks } = extractMetaFromLinks(localFallback.links || []);
         fillPublic(localFallback.profile || {}, meta);
         renderLinks('lt-links', normalLinks || []);
+        setupContactDownload(localFallback.profile || {}, normalLinks || []);
       } else {
         showPlaceholder('Run via http:// (not file://) or add data first.');
       }
@@ -109,6 +111,7 @@ import { residueTelemetry } from './supabase-telemetry.js';
     const hydratedLinks = (normalLinks || []).map(l => ({ ...l, hidden: parseBool(meta[`hidden_${l.sort}`], false) }));
     fillPublic(profile || {}, meta);
     renderLinks('lt-links', hydratedLinks || []);
+    setupContactDownload(profile || {}, hydratedLinks || []);
     finishOverlay();
     if (overlay) setTimeout(() => { overlay.style.display = 'none'; }, 220);
   }
@@ -137,6 +140,7 @@ import { residueTelemetry } from './supabase-telemetry.js';
     const avatar = document.getElementById('lt-avatar');
     if (avatar) avatar.src = 'https://placehold.co/200x200?text=Add+photo';
     renderLinks('lt-links', []);
+    setupContactDownload({}, []);
     showStatus('lt-status', message || '');
   }
 
@@ -146,8 +150,11 @@ import { residueTelemetry } from './supabase-telemetry.js';
   const RESET_OTP_KEY = 'residue_reset_otp';
   const LOCAL_PROFILE_KEY_PREFIX = 'residue_link_profile_';
   const META_PREFIX = '__meta__';
+  const WHATSAPP_MESSAGE_MAX_CHARS = 180;
   const TEMP_ADMIN_EMAIL = 'mike@residue.com';
   const TEMP_ADMIN_PASSWORD = '123456';
+  const contactDownloadState = { name: '', phone: '' };
+  let contactDownloadBound = false;
   const socialConfig = [
     { id: 'social', label: 'LinkedIn', toggle: 'show-social' },
     { id: 'social-2', label: 'Instagram', toggle: 'show-social-2' },
@@ -162,6 +169,99 @@ import { residueTelemetry } from './supabase-telemetry.js';
     const s = String(val).toLowerCase();
     return !(s === '0' || s === 'false' || s === 'no' || s === 'off');
   };
+
+  function extractVisiblePhone(links = []) {
+    const callLink = (links || []).find(link => {
+      const url = String(link?.url || '');
+      const label = String(link?.label || '').toLowerCase();
+      return !link?.hidden && (label === 'call' || /^tel:/i.test(url));
+    });
+    return callLink ? String(callLink.url || '').replace(/^tel:/i, '').trim() : '';
+  }
+
+  function escapeVCardValue(value) {
+    return String(value || '')
+      .replace(/\\/g, '\\\\')
+      .replace(/\n/g, '\\n')
+      .replace(/;/g, '\\;')
+      .replace(/,/g, '\\,');
+  }
+
+  function openContactModal() {
+    const modal = document.getElementById('lt-contact-consent');
+    if (modal) modal.hidden = false;
+  }
+
+  function closeContactModal() {
+    const modal = document.getElementById('lt-contact-consent');
+    if (modal) modal.hidden = true;
+  }
+
+  function downloadContactVcf() {
+    const name = contactDownloadState.name || 'Residue Contact';
+    const phone = contactDownloadState.phone || '';
+    if (!phone) {
+      showStatus('lt-status', 'Phone number is not available for download.');
+      return;
+    }
+    const vcard = [
+      'BEGIN:VCARD',
+      'VERSION:3.0',
+      `FN:${escapeVCardValue(name)}`,
+      `TEL;TYPE=CELL:${escapeVCardValue(phone)}`,
+      'END:VCARD'
+    ].join('\r\n');
+    const blob = new Blob([vcard], { type: 'text/vcard;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${slugify(name) || 'contact'}.vcf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showStatus('lt-status', 'Contact downloaded.');
+  }
+
+  function bindContactDownloadOnce() {
+    if (contactDownloadBound) return;
+    const saveBtn = document.getElementById('lt-save-contact-btn');
+    const agreeBtn = document.getElementById('lt-contact-agree');
+    const disagreeBtn = document.getElementById('lt-contact-disagree');
+    const backdrop = document.getElementById('lt-contact-backdrop');
+
+    saveBtn?.addEventListener('click', () => {
+      if (!contactDownloadState.phone) {
+        showStatus('lt-status', 'Phone number is not available for download.');
+        return;
+      }
+      openContactModal();
+    });
+    agreeBtn?.addEventListener('click', () => {
+      closeContactModal();
+      downloadContactVcf();
+    });
+    disagreeBtn?.addEventListener('click', closeContactModal);
+    backdrop?.addEventListener('click', closeContactModal);
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeContactModal();
+    });
+    contactDownloadBound = true;
+  }
+
+  function setupContactDownload(profile = {}, links = []) {
+    bindContactDownloadOnce();
+    const saveBtn = document.getElementById('lt-save-contact-btn');
+    const consentMsg = document.getElementById('lt-contact-message');
+    const name = (profile?.name || '').trim();
+    const phone = extractVisiblePhone(links);
+    contactDownloadState.name = name;
+    contactDownloadState.phone = phone;
+    if (saveBtn) saveBtn.disabled = !name || !phone;
+    if (consentMsg) {
+      consentMsg.textContent = 'You are requesting to save contact details to your device. Do you agree to continue?';
+    }
+  }
 
   function extractMetaFromLinks(links) {
     const meta = {};
@@ -243,6 +343,15 @@ import { residueTelemetry } from './supabase-telemetry.js';
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
       .slice(0, 60);
+  }
+
+  const RESERVED_SLUGS = new Set(['preview-card', 'preview', 'card-preview']);
+  function resolveSlug(rawSlug, fallbackSource = '') {
+    const cleaned = slugify(rawSlug || '');
+    if (!cleaned || RESERVED_SLUGS.has(cleaned)) {
+      return slugify(fallbackSource || '');
+    }
+    return cleaned;
   }
 
   const localProfileKey = slug => `${LOCAL_PROFILE_KEY_PREFIX}${(slug || '').toLowerCase()}`;
@@ -452,10 +561,14 @@ import { residueTelemetry } from './supabase-telemetry.js';
 
   async function ensureProfileRow(user) {
     if (!user) return;
+    const authEmail = normalizeEmail(user.email);
+    const emailPrefix = (authEmail || user.email || '').split('@')[0];
+    const fallbackSlug = resolveSlug(emailPrefix, authEmail) || `user-${String(user.id || '').replace(/-/g, '').slice(0, 8)}`;
     await supabase.from('profiles').upsert({
       id: user.id,
+      auth_email: authEmail || null,
       name: user.email,
-      slug: user.email.split('@')[0],
+      slug: fallbackSlug,
       theme: 'dark'
     });
   }
@@ -484,9 +597,10 @@ import { residueTelemetry } from './supabase-telemetry.js';
   }
 
   async function loadProfile(user) {
-    const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+    let { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
     if (!profile) {
       await ensureProfileRow(user);
+      ({ data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single());
     }
     // Fetch links; add hidden default false so toggles work locally
     const { data: links } = await supabase.from('links').select('*').eq('profile_id', user.id).order('sort', { ascending: true });
@@ -533,8 +647,9 @@ import { residueTelemetry } from './supabase-telemetry.js';
     setValue('full-name', profile.name || '');
     setValue('role', profile.title || '');
     setValue('lt-bio', profile.bio || '');
-    setValue('lt-slug', profile.slug || '');
-    const publicUrl = `${window.location.origin}${window.location.pathname.replace(/link-admin\\.html$/, 'link-profile.html')}?u=${profile.slug || ''}`;
+    const resolvedProfileSlug = resolveSlug(profile.slug, profile.auth_email || profile.name || '');
+    setValue('lt-slug', resolvedProfileSlug || '');
+    const publicUrl = `${window.location.origin}${window.location.pathname.replace(/link-admin\\.html$/, 'link-profile.html')}?u=${resolvedProfileSlug || ''}`;
     const urlEl = document.getElementById('lt-public-url');
     if (urlEl) urlEl.textContent = publicUrl;
     const setToggle = (id, checked = true) => {
@@ -547,46 +662,55 @@ import { residueTelemetry } from './supabase-telemetry.js';
     setValue('phone', '');
     setValue('email-config', '');
     setValue('whatsapp-number', '');
+    setValue('whatsapp-message', '');
 
     const { meta, normalLinks } = extractMetaFromLinks(Array.isArray(links) ? links : []);
+    const hasMeta = key => Object.prototype.hasOwnProperty.call(meta, key);
+    const parseToggleMeta = (key, fallback = true) => parseBool(meta[key], fallback);
+
     setToggle('show-role', parseBool(meta.show_role, true));
     setToggle('show-bio', parseBool(meta.show_bio, true));
-    setToggle('show-website', true);
-    setToggle('show-phone', true);
-    setToggle('show-email', true);
-    setToggle('show-whatsapp', true);
-    socialConfig.forEach(s => setToggle(s.toggle, true));
+    setToggle('show-slug', parseBool(meta.show_slug, true));
+    setToggle('show-website', parseToggleMeta('show_website', true));
+    setToggle('show-phone', parseToggleMeta('show_phone', true));
+    setToggle('show-email', parseToggleMeta('show_email', true));
+    setToggle('show-whatsapp', parseToggleMeta('show_whatsapp', true));
+    const legacyShowTemplate = parseToggleMeta('show_whatsapp_template', true);
+    const legacyShowCustom = parseToggleMeta('show_whatsapp_custom', true);
+    setToggle('show-whatsapp-message', parseToggleMeta('show_whatsapp_message', legacyShowTemplate && legacyShowCustom));
+    socialConfig.forEach(s => {
+      const toggleKey = s.toggle.replace(/-/g, '_');
+      setToggle(s.toggle, parseToggleMeta(toggleKey, true));
+    });
+    if (hasMeta('whatsapp_number')) setValue('whatsapp-number', meta.whatsapp_number || '');
+    const legacyMessage = meta.whatsapp_custom || meta.whatsapp_template || '';
+    if (hasMeta('whatsapp_message')) setValue('whatsapp-message', meta.whatsapp_message || '');
+    else if (legacyMessage) setValue('whatsapp-message', legacyMessage);
 
     normalLinks.forEach(link => {
       const label = (link.label || '').toLowerCase();
       if (label === 'website') {
         setValue('website', link.url || '');
-        setToggle('show-website', !link.hidden);
+        if (!hasMeta('show_website')) setToggle('show-website', !link.hidden);
         return;
       }
       if (label === 'call') {
         setValue('phone', (link.url || '').replace(/^tel:/i, ''));
-        setToggle('show-phone', !link.hidden);
+        if (!hasMeta('show_phone')) setToggle('show-phone', !link.hidden);
         return;
       }
       if (label === 'email') {
         setValue('email-config', (link.url || '').replace(/^mailto:/i, ''));
-        setToggle('show-email', !link.hidden);
+        if (!hasMeta('show_email')) setToggle('show-email', !link.hidden);
         return;
       }
       if (label === 'whatsapp') {
-        setToggle('show-whatsapp', !link.hidden);
+        if (!hasMeta('show_whatsapp')) setToggle('show-whatsapp', !link.hidden);
         const m = String(link.url || '').match(/^https:\/\/wa\.me\/(\d+)(?:\?text=(.*))?$/i);
         if (m?.[1]) setValue('whatsapp-number', m[1]);
         if (m?.[2]) {
           const msg = decodeURIComponent(m[2]);
-          const tpl = document.getElementById('whatsapp-template');
-          const custom = document.getElementById('whatsapp-custom');
-          if (tpl) {
-            const hasOpt = Array.from(tpl.options).some(o => o.value === msg);
-            tpl.value = hasOpt ? msg : 'CUSTOM';
-          }
-          if (custom && (!tpl || tpl.value === 'CUSTOM')) custom.value = msg;
+          if (!hasMeta('whatsapp_message')) setValue('whatsapp-message', msg);
         }
         return;
       }
@@ -594,26 +718,23 @@ import { residueTelemetry } from './supabase-telemetry.js';
       if (socialIdx >= 0) {
         const social = socialConfig[socialIdx];
         setValue(social.id, link.url || '');
-        setToggle(social.toggle, !link.hidden);
+        const toggleKey = social.toggle.replace(/-/g, '_');
+        if (!hasMeta(toggleKey)) setToggle(social.toggle, !link.hidden);
       }
     });
 
-    const waCustom = document.getElementById('whatsapp-custom');
-    const waTemplate = document.getElementById('whatsapp-template');
-    if (waCustom && waTemplate) {
-      const isCustom = waTemplate.value === 'CUSTOM';
-      waCustom.style.display = isCustom ? 'block' : 'none';
-      if (!isCustom) waCustom.value = '';
+    const waMessage = document.getElementById('whatsapp-message');
+    const waCount = document.getElementById('whatsapp-message-count');
+    if (waMessage && waCount) {
+      waCount.textContent = `${(waMessage.value || '').length} / ${WHATSAPP_MESSAGE_MAX_CHARS}`;
     }
   }
 
   function buildWhatsappLink() {
     const numInput = document.getElementById('whatsapp-number');
-    const templateSelect = document.getElementById('whatsapp-template');
-    const customMsg = document.getElementById('whatsapp-custom')?.value.trim();
+    const messageInput = document.getElementById('whatsapp-message');
     const showWhatsapp = document.getElementById('show-whatsapp');
-    const showTemplate = document.getElementById('show-whatsapp-template');
-    const showCustom = document.getElementById('show-whatsapp-custom');
+    const showMessage = document.getElementById('show-whatsapp-message');
     const rawNumber = (numInput?.value || '').replace(/[^\d]/g, '');
     if (!rawNumber) return null;
     if (showWhatsapp && !showWhatsapp.checked) {
@@ -623,15 +744,9 @@ import { residueTelemetry } from './supabase-telemetry.js';
         hidden: true
       };
     }
-    const selected = templateSelect?.value || '';
-    let text = '';
-    if (!showTemplate || showTemplate.checked) {
-      if (selected === 'CUSTOM') {
-        if (!showCustom || showCustom.checked) text = customMsg || '';
-      } else {
-        text = selected || '';
-      }
-    }
+    const text = (showMessage && !showMessage.checked)
+      ? ''
+      : (messageInput?.value || '').trim().slice(0, WHATSAPP_MESSAGE_MAX_CHARS);
     const encoded = text ? `?text=${encodeURIComponent(text)}` : '';
     return {
       label: 'WhatsApp',
@@ -650,9 +765,6 @@ import { residueTelemetry } from './supabase-telemetry.js';
     const website = getValue('website');
     const phone = getValue('phone');
     const email = getValue('email-config');
-    if (!website && sw) sw.checked = false;
-    if (!phone && sp) sp.checked = false;
-    if (!email && se) se.checked = false;
     if (website) linksOut.push({ label: 'Website', url: website.startsWith('http') ? website : `https://${website}`, hidden: sw ? !sw.checked : false, sort: linksOut.length });
     if (phone) linksOut.push({ label: 'Call', url: `tel:${phone}`, hidden: sp ? !sp.checked : false, sort: linksOut.length });
     if (email) linksOut.push({ label: 'Email', url: `mailto:${email}`, hidden: se ? !se.checked : false, sort: linksOut.length });
@@ -664,10 +776,7 @@ import { residueTelemetry } from './supabase-telemetry.js';
     socialConfig.forEach(social => {
       const raw = getValue(social.id);
       const show = document.getElementById(social.toggle);
-      if (!raw) {
-        if (show) show.checked = false;
-        return;
-      }
+      if (!raw) return;
       const url = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
       linksOut.push({
         label: social.label,
@@ -680,16 +789,59 @@ import { residueTelemetry } from './supabase-telemetry.js';
     linksOut.push(metaLink('show_role', document.getElementById('show-role')?.checked ?? true, linksOut.length));
     linksOut.push(metaLink('show_bio', document.getElementById('show-bio')?.checked ?? true, linksOut.length));
     linksOut.push(metaLink('show_slug', document.getElementById('show-slug')?.checked ?? true, linksOut.length));
+    linksOut.push(metaLink('show_website', document.getElementById('show-website')?.checked ?? true, linksOut.length));
+    linksOut.push(metaLink('show_phone', document.getElementById('show-phone')?.checked ?? true, linksOut.length));
+    linksOut.push(metaLink('show_email', document.getElementById('show-email')?.checked ?? true, linksOut.length));
+    linksOut.push(metaLink('show_whatsapp', document.getElementById('show-whatsapp')?.checked ?? true, linksOut.length));
+    linksOut.push(metaLink('show_whatsapp_message', document.getElementById('show-whatsapp-message')?.checked ?? true, linksOut.length));
+    socialConfig.forEach(social => {
+      const toggleKey = social.toggle.replace(/-/g, '_');
+      linksOut.push(metaLink(toggleKey, document.getElementById(social.toggle)?.checked ?? true, linksOut.length));
+    });
+    linksOut.push(metaLink('whatsapp_number', getValue('whatsapp-number'), linksOut.length));
+    linksOut.push(metaLink('whatsapp_message', getValue('whatsapp-message').slice(0, WHATSAPP_MESSAGE_MAX_CHARS), linksOut.length));
 
     return linksOut;
+  }
+
+  function collectConfigureSnapshot(user, profile, links) {
+    const form = document.querySelector('#lt-editor form.configure-form');
+    const fields = {};
+    if (form) {
+      const controls = form.querySelectorAll('input, textarea, select');
+      controls.forEach(control => {
+        const key = control.id || control.name;
+        if (!key) return;
+        if (control.type === 'checkbox') {
+          fields[key] = !!control.checked;
+          return;
+        }
+        if (control.type === 'file') {
+          const file = control.files?.[0] || null;
+          fields[key] = file
+            ? { name: file.name, size: file.size, type: file.type || '', last_modified: file.lastModified || null }
+            : null;
+          return;
+        }
+        fields[key] = control.value ?? '';
+      });
+    }
+    return {
+      profile_id: user?.id || null,
+      auth_email: normalizeEmail(user?.email) || null,
+      saved_at: new Date().toISOString(),
+      fields,
+      profile,
+      links
+    };
   }
 
   function bindEditorActions() {
     const logoInput = document.getElementById('logo');
     const avatarUrlInput = document.getElementById('lt-avatar-url');
     const saveStatusEl = document.getElementById('lt-save-status');
-    const waTemplate = document.getElementById('whatsapp-template');
-    const waCustom = document.getElementById('whatsapp-custom');
+    const waMessage = document.getElementById('whatsapp-message');
+    const waMessageCount = document.getElementById('whatsapp-message-count');
 
     const handleLogoChange = async () => {
       const file = logoInput?.files?.[0];
@@ -713,14 +865,30 @@ import { residueTelemetry } from './supabase-telemetry.js';
       }
     };
     logoInput?.addEventListener('change', handleLogoChange);
-    const toggleWaCustom = () => {
-      if (!waTemplate || !waCustom) return;
-      const isCustom = waTemplate.value === 'CUSTOM';
-      waCustom.style.display = isCustom ? 'block' : 'none';
-      if (!isCustom) waCustom.value = '';
+    const updateWaMessageCount = () => {
+      if (!waMessage || !waMessageCount) return;
+      waMessageCount.textContent = `${waMessage.value.length} / ${WHATSAPP_MESSAGE_MAX_CHARS}`;
     };
-    waTemplate?.addEventListener('change', toggleWaCustom);
-    toggleWaCustom();
+    waMessage?.addEventListener('beforeinput', e => {
+      if (!waMessage) return;
+      if (e.inputType && e.inputType.startsWith('delete')) return;
+      const start = waMessage.selectionStart ?? waMessage.value.length;
+      const end = waMessage.selectionEnd ?? waMessage.value.length;
+      const nextLength = waMessage.value.length - (end - start) + (e.data?.length || 0);
+      if (nextLength > WHATSAPP_MESSAGE_MAX_CHARS) {
+        e.preventDefault();
+        alert(`WhatsApp message cannot exceed ${WHATSAPP_MESSAGE_MAX_CHARS} characters.`);
+      }
+    });
+    waMessage?.addEventListener('input', () => {
+      if (!waMessage) return;
+      if (waMessage.value.length > WHATSAPP_MESSAGE_MAX_CHARS) {
+        waMessage.value = waMessage.value.slice(0, WHATSAPP_MESSAGE_MAX_CHARS);
+        alert(`WhatsApp message cannot exceed ${WHATSAPP_MESSAGE_MAX_CHARS} characters.`);
+      }
+      updateWaMessageCount();
+    });
+    updateWaMessageCount();
 
     const saveBtn = document.getElementById('lt-save');
     const statusEl = document.getElementById('lt-save-status');
@@ -733,9 +901,8 @@ import { residueTelemetry } from './supabase-telemetry.js';
           if (!session) return showStatusEl(statusEl, 'Not signed in.', 'error');
         }
 
-        const profile = collectProfilePayload(session?.user?.id || CURRENT_USER_KEY);
+        const profile = collectProfilePayload(session?.user || null);
         if (!profile.name) return showStatusEl(statusEl, 'Name is required.', 'error');
-        if (!profile.slug) return showStatusEl(statusEl, 'Slug / URL is required.', 'error');
         const links = collectLinks();
         showStatusEl(statusEl, 'Saving...', 'loading');
 
@@ -758,6 +925,17 @@ import { residueTelemetry } from './supabase-telemetry.js';
               showStatusEl(statusEl, lErr.message, 'error');
               return;
             }
+          }
+          const snapshot = collectConfigureSnapshot(session.user, profile, applyHiddenMeta(links));
+          const { error: cErr } = await supabase.from('card_configs').upsert({
+            profile_id: session.user.id,
+            auth_email: normalizeEmail(session.user.email) || null,
+            config_data: snapshot,
+            updated_at: new Date().toISOString()
+          });
+          if (cErr) {
+            showStatusEl(statusEl, cErr.message, 'error');
+            return;
           }
         }
 
@@ -783,14 +961,19 @@ import { residueTelemetry } from './supabase-telemetry.js';
       }
     });
   }
-  function collectProfilePayload(userId) {
+  function collectProfilePayload(user) {
     const name = getValue('full-name') || getValue('lt-name');
-    const slug = getValue('lt-slug') || slugify(name || getValue('email-config'));
+    const slug = resolveSlug(
+      getValue('lt-slug'),
+      name || getValue('email-config') || normalizeEmail(user?.email)
+    );
     const title = getValue('role') || getValue('lt-title');
     const bio = getValue('lt-bio');
     const avatar_url = getValue('lt-avatar-url');
     const theme = document.querySelector('input[name="lt-theme"]:checked')?.value || 'dark';
-    return { id: userId, name, slug, title, bio, avatar_url, theme };
+    const auth_email = normalizeEmail(user?.email);
+    const id = user?.id || CURRENT_USER_KEY;
+    return { id, auth_email: auth_email || null, name, slug, title, bio, avatar_url, theme };
   }
 
   /* Helpers */

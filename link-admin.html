@@ -66,6 +66,10 @@
         <input type="hidden" name="_next" value="/thank-you.html">
         <input type="text" name="_honey" style="display:none">
 
+        <label for="logo">Upload Company or Personal logo (Profile Image)</label>
+        <input id="logo" name="logo" type="file" accept="image/*" required>
+        <input id="lt-avatar-url" name="lt-avatar-url" type="hidden">
+
         <label for="full-name">Full name</label>
         <input id="full-name" name="full-name" type="text" autocomplete="name" placeholder="Full Last" required>
 
@@ -100,10 +104,6 @@
             <input class="lt-include-checkbox" type="checkbox" id="show-email" checked>
           </label>
         </div>
-
-        <label for="logo">Upload Company or Personal logo</label>
-        <input id="logo" name="logo" type="file" accept="image/*" required>
-        <input id="lt-avatar-url" name="lt-avatar-url" type="hidden">
 
         <div class="form-group">
           <div class="lt-label">Bio (optional, <= 50 words)</div>
@@ -164,25 +164,14 @@
               <input class="lt-include-checkbox" type="checkbox" id="show-whatsapp" checked>
             </label>
           </div>
-          <label class="lt-note" for="whatsapp-template" style="margin-top:10px;">Preset first message</label>
+          <label class="lt-note" for="whatsapp-message" style="margin-top:10px;">Custom first message (max 180 chars)</label>
           <div class="input-toggle-row">
-            <select class="lt-input" id="whatsapp-template" name="whatsapp-template">
-              <option value="Hi, I'm interested in Residue. Can you share details?">Interest in Residue</option>
-              <option value="Hi, could you share your email so I can send details?">Request email</option>
-              <option value="Hi, can we book a quick call?">Book a call</option>
-              <option value="Hi, please send me your contact details.">Send contact details</option>
-              <option value="CUSTOM">Custom message...</option>
-            </select>
-            <label class="include-toggle" for="show-whatsapp-template">
-              <input class="lt-include-checkbox" type="checkbox" id="show-whatsapp-template" checked>
+            <textarea class="lt-textarea" id="whatsapp-message" name="whatsapp-message" placeholder="Write the first WhatsApp message users will see..." maxlength="180"></textarea>
+            <label class="include-toggle" for="show-whatsapp-message">
+              <input class="lt-include-checkbox" type="checkbox" id="show-whatsapp-message" checked>
             </label>
           </div>
-          <div class="input-toggle-row">
-            <textarea class="lt-textarea" id="whatsapp-custom" placeholder="Custom WhatsApp message (optional)"></textarea>
-            <label class="include-toggle" for="show-whatsapp-custom">
-              <input class="lt-include-checkbox" type="checkbox" id="show-whatsapp-custom" checked>
-            </label>
-          </div>
+          <p class="lt-note" id="whatsapp-message-count">0 / 180</p>
         </div>
         <div class="form-group">
           <div class="lt-label">Slug / URL</div>
