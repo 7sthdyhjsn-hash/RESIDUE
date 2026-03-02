@@ -167,6 +167,31 @@ create table if not exists public.codes (
 create index if not exists codes_owner_profile_idx on public.codes (owner_profile);
 create index if not exists codes_code_idx on public.codes (code);
 
+create table if not exists public.card_configs (
+  profile_id uuid primary key references public.profiles(id) on delete cascade,
+  auth_email text,
+  config_data jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists card_configs_auth_email_idx on public.card_configs (auth_email);
+
+alter table public.card_configs
+  add column if not exists auth_email text;
+alter table public.card_configs
+  add column if not exists config_data jsonb not null default '{}'::jsonb;
+alter table public.card_configs
+  add column if not exists created_at timestamptz not null default now();
+alter table public.card_configs
+  add column if not exists updated_at timestamptz not null default now();
+
+update public.card_configs c
+set auth_email = lower(u.email)
+from auth.users u
+where c.profile_id = u.id
+  and (c.auth_email is null or c.auth_email = '');
+
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
@@ -204,6 +229,7 @@ execute function public.sync_profile_email();
 alter table public.profiles enable row level security;
 alter table public.links enable row level security;
 alter table public.codes enable row level security;
+alter table public.card_configs enable row level security;
 
 drop policy if exists "profiles public read by slug" on public.profiles;
 create policy "profiles public read by slug"
@@ -242,6 +268,14 @@ for all
 to authenticated
 using (auth.uid() = owner_profile)
 with check (auth.uid() = owner_profile);
+
+drop policy if exists "card configs owner read write" on public.card_configs;
+create policy "card configs owner read write"
+on public.card_configs
+for all
+to authenticated
+using (auth.uid() = profile_id)
+with check (auth.uid() = profile_id);
 
 create or replace function public.create_code_for_user(p_owner uuid)
 returns public.codes
