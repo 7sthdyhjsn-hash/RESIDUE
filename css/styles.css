@@ -1757,6 +1757,34 @@ body::after { opacity: 0.04; }
   font-weight: 600;
 }
 
+.contact-links {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
+.contact-link-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.contact-link-icon {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-premium);
+  flex: 0 0 16px;
+}
+
+.contact-link-icon svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
 @media (max-width: 900px) {
   .contact-grid {
     grid-template-columns: 1fr;
