@@ -66,6 +66,10 @@
         <input type="hidden" name="_next" value="/thank-you.html">
         <input type="text" name="_honey" style="display:none">
 
+        <label for="logo">Upload Company or Personal logo (Profile Image)</label>
+        <input id="logo" name="logo" type="file" accept="image/*" required>
+        <input id="lt-avatar-url" name="lt-avatar-url" type="hidden">
+
         <label for="full-name">Full name</label>
         <input id="full-name" name="full-name" type="text" autocomplete="name" placeholder="Full Last" required>
 
@@ -100,10 +104,6 @@
             <input class="lt-include-checkbox" type="checkbox" id="show-email" checked>
           </label>
         </div>
-
-        <label for="logo">Upload Company or Personal logo</label>
-        <input id="logo" name="logo" type="file" accept="image/*" required>
-        <input id="lt-avatar-url" name="lt-avatar-url" type="hidden">
 
         <div class="form-group">
           <div class="lt-label">Bio (optional, <= 50 words)</div>

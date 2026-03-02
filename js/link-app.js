@@ -452,10 +452,12 @@ import { residueTelemetry } from './supabase-telemetry.js';
 
   async function ensureProfileRow(user) {
     if (!user) return;
+    const authEmail = normalizeEmail(user.email);
     await supabase.from('profiles').upsert({
       id: user.id,
+      auth_email: authEmail || null,
       name: user.email,
-      slug: user.email.split('@')[0],
+      slug: (authEmail || user.email).split('@')[0],
       theme: 'dark'
     });
   }
@@ -484,9 +486,10 @@ import { residueTelemetry } from './supabase-telemetry.js';
   }
 
   async function loadProfile(user) {
-    const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+    let { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
     if (!profile) {
       await ensureProfileRow(user);
+      ({ data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single());
     }
     // Fetch links; add hidden default false so toggles work locally
     const { data: links } = await supabase.from('links').select('*').eq('profile_id', user.id).order('sort', { ascending: true });
@@ -733,9 +736,8 @@ import { residueTelemetry } from './supabase-telemetry.js';
           if (!session) return showStatusEl(statusEl, 'Not signed in.', 'error');
         }
 
-        const profile = collectProfilePayload(session?.user?.id || CURRENT_USER_KEY);
+        const profile = collectProfilePayload(session?.user || null);
         if (!profile.name) return showStatusEl(statusEl, 'Name is required.', 'error');
-        if (!profile.slug) return showStatusEl(statusEl, 'Slug / URL is required.', 'error');
         const links = collectLinks();
         showStatusEl(statusEl, 'Saving...', 'loading');
 
@@ -783,14 +785,16 @@ import { residueTelemetry } from './supabase-telemetry.js';
       }
     });
   }
-  function collectProfilePayload(userId) {
+  function collectProfilePayload(user) {
     const name = getValue('full-name') || getValue('lt-name');
     const slug = getValue('lt-slug') || slugify(name || getValue('email-config'));
     const title = getValue('role') || getValue('lt-title');
     const bio = getValue('lt-bio');
     const avatar_url = getValue('lt-avatar-url');
     const theme = document.querySelector('input[name="lt-theme"]:checked')?.value || 'dark';
-    return { id: userId, name, slug, title, bio, avatar_url, theme };
+    const auth_email = normalizeEmail(user?.email);
+    const id = user?.id || CURRENT_USER_KEY;
+    return { id, auth_email: auth_email || null, name, slug, title, bio, avatar_url, theme };
   }
 
   /* Helpers */
