@@ -186,6 +186,24 @@
     </div>
   </div>
 
+  <div class="lt-cropper-modal" id="lt-cropper-modal" hidden>
+    <div class="lt-cropper-backdrop" id="lt-cropper-backdrop"></div>
+    <div class="lt-cropper-panel" role="dialog" aria-modal="true" aria-labelledby="lt-cropper-title">
+      <div class="lt-cropper-head">
+        <h3 id="lt-cropper-title">Adjust Logo Crop</h3>
+      </div>
+      <p class="lt-note">Drag the box to choose what appears in your profile image.</p>
+      <div class="lt-cropper-stage" id="lt-cropper-stage">
+        <img id="lt-cropper-image" alt="Selected logo preview">
+        <div class="lt-cropper-box" id="lt-cropper-box"></div>
+      </div>
+      <div class="lt-cropper-actions">
+        <button class="lt-btn secondary" type="button" id="lt-crop-cancel">Cancel</button>
+        <button class="lt-btn" type="button" id="lt-crop-apply">Use Crop</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="js/link-app.js"></script>
   <script type="module">
     window.linktree?.renderAdmin();
