@@ -341,6 +341,20 @@
       return { ok: false, reason: lastError?.message || "unknown_error" };
     }
 
+    async function syncProfileForCurrentSession() {
+      const supabase = await getSupabaseClient();
+      if (!supabase) return;
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          await ensureProfileRow(supabase, session.user, session.user.email || "");
+        }
+      } catch {
+        // Silent fail: user can still proceed with auth flows.
+      }
+    }
+
     function setStatus(el, msg, show = true) {
       if (!el) return;
       el.textContent = msg;
@@ -426,6 +440,9 @@
 
     tabSignin?.addEventListener("click", () => setMode("signin"));
     tabCreate?.addEventListener("click", () => setMode("create"));
+
+    // Backfill legacy users missing app rows when an auth session already exists.
+    syncProfileForCurrentSession();
 
     // SIGN IN submit
     signinForm?.addEventListener("submit", async (e) => {
