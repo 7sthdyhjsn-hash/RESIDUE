@@ -101,7 +101,7 @@ body.access-page {
   --nav-glass-strong: rgba(11, 8, 20, 0.9);
   --layer: rgba(15,12,24,0.78);
   background-color: #0b0814;
-  background-image: linear-gradient(180deg, rgba(15,12,24,0.62), rgba(12,10,22,0.62)), url('../images/g061723147f2819bdeede5c24a04def4e32711d0124986aeff206973a9d4d37aad8d0f9c0bfc7af988ed56caa2846b24df10158b3d88f772ab5a360cda625e8be_1280-6078455.jpg');
+  background-image: linear-gradient(180deg, rgba(15,12,24,0.62), rgba(12,10,22,0.62)), url('../images/residue-web/1C1A9269.jpg');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
@@ -390,7 +390,7 @@ header.scrolled {
   text-align: center;
   padding: 20vh 24px 18vh;
   overflow: hidden;
-  background-image: url('../images/steel-flatlay.webp');
+  background-image: url('../images/residue-web/1C1A9297.jpg');
   background-size: cover;
   background-position: center;
   isolation: isolate;
@@ -684,7 +684,7 @@ p, .muted, .subhead, .h2, h1, h2, h3 {
 /* Cards (deprecated in new layout) */
 .card { position: relative; overflow: hidden; border-radius: 2px; border: 1px solid transparent; background: transparent; min-height: 0; padding: 0; }
 .card::after { display: none; }
-.card img { position: relative; inset: auto; width: 100%; height: auto; object-fit: cover; filter: grayscale(40%); opacity: 0.92; }
+.card img { position: relative; inset: auto; width: 100%; height: auto; object-fit: cover; filter: grayscale(12%); opacity: 1; }
 .card .caption { display: none; }
 
 /* Legacy pricing removed */
@@ -1042,7 +1042,7 @@ input:focus, textarea:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-image: url('../images/concrete-wall.jpg.avif');
+  background-image: url('../images/residue-web/1C1A9408.jpg');
   background-size: cover;
   background-position: center;
   overflow: hidden;
@@ -1307,7 +1307,7 @@ input:focus, textarea:focus {
 
 /* Premium hero */
 .premium-hero {
-  background-image: url('../images/arcitecture of old greek.jpg');
+  background-image: url('../images/residue-web/1C1A9369.jpg');
   filter: saturate(0.92) brightness(0.96);
   overflow: hidden;
 }
