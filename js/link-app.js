@@ -153,7 +153,6 @@ import { residueTelemetry } from './supabase-telemetry.js';
   /* Admin */
   const USERS_KEY = 'residue_users';
   const CURRENT_USER_KEY = 'residue_current_user';
-  const RESET_OTP_KEY = 'residue_reset_otp';
   const LOCAL_PROFILE_KEY_PREFIX = 'residue_link_profile_';
   const META_PREFIX = '__meta__';
   const WHATSAPP_MESSAGE_MAX_CHARS = 180;
@@ -437,6 +436,13 @@ function ensureLocalDraftForUser(user) {
     return `${url.pathname}${url.search}`;
   }
 
+  function buildAdminPageUrl() {
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.hash = '';
+    return `${url.origin}${url.pathname}`;
+  }
+
   function updateAdminContextUrl(slug) {
     const nextUrl = buildAdminContextUrl(slug);
     const currentUrl = `${window.location.pathname}${window.location.search}`;
@@ -476,20 +482,51 @@ function ensureLocalDraftForUser(user) {
     const resetSubmit = document.getElementById('lt-reset-submit');
     const resetStatus = document.getElementById('lt-reset-status');
 
+    const setResetMode = mode => {
+      const isRecovery = mode === 'recovery';
+      if (resetEmail) resetEmail.hidden = isRecovery;
+      if (sendOtpBtn) {
+        sendOtpBtn.hidden = isRecovery;
+        sendOtpBtn.textContent = 'Send reset email';
+      }
+      if (otpInput) otpInput.hidden = true;
+      if (resetPass) resetPass.hidden = !isRecovery;
+      if (resetConfirm) resetConfirm.hidden = !isRecovery;
+      if (resetSubmit) resetSubmit.hidden = !isRecovery;
+    };
+
     const openResetModal = () => {
       if (!resetModal) return;
       resetModal.hidden = false;
       document.body.style.overflow = 'hidden';
+      setResetMode('request');
       showStatusEl(resetStatus, '', '');
       const currentEmail = emailInput?.value?.trim() || '';
       if (resetEmail && currentEmail) resetEmail.value = currentEmail;
       setTimeout(() => resetEmail?.focus(), 0);
     };
 
+    const openRecoveryModal = email => {
+      if (!resetModal) return;
+      resetModal.hidden = false;
+      document.body.style.overflow = 'hidden';
+      setResetMode('recovery');
+      showStatusEl(resetStatus, 'Enter your new password.', 'success');
+      if (resetEmail && email) resetEmail.value = email;
+      if (resetPass) resetPass.value = '';
+      if (resetConfirm) resetConfirm.value = '';
+      setTimeout(() => resetPass?.focus(), 0);
+    };
+
+    document.addEventListener('lt-password-recovery', event => {
+      openRecoveryModal(normalizeEmail(event.detail?.email || ''));
+    });
+
     const closeResetModal = () => {
       if (!resetModal) return;
       resetModal.hidden = true;
       document.body.style.overflow = '';
+      setResetMode('request');
     };
 
     forgotToggle?.addEventListener('click', (e) => {
@@ -501,58 +538,35 @@ function ensureLocalDraftForUser(user) {
       if (e.key === 'Escape' && !resetModal?.hidden) closeResetModal();
     });
 
-    sendOtpBtn?.addEventListener('click', () => {
+    sendOtpBtn?.addEventListener('click', async () => {
       const email = normalizeEmail(resetEmail?.value);
       if (!email) return showStatusEl(resetStatus, 'Enter your account email.', 'error');
-      const users = getLocalUsers();
-      const user = users.find(u => normalizeEmail(u.email) === email);
-      if (!user) return showStatusEl(resetStatus, 'No account found for that email.', 'error');
-
-      const otp = String(Math.floor(100000 + Math.random() * 900000));
-      const payload = { email, otp, expiresAt: Date.now() + (10 * 60 * 1000) };
-      sessionStorage.setItem(RESET_OTP_KEY, JSON.stringify(payload));
-      showStatusEl(resetStatus, `OTP sent to ${email}. Demo OTP: ${otp}`, 'success');
+      if (!supabase) return showStatusEl(resetStatus, 'Password reset requires Supabase auth.', 'error');
+      showStatusEl(resetStatus, 'Sending reset email...', 'loading');
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: buildAdminPageUrl()
+      });
+      if (error) return showStatusEl(resetStatus, error.message, 'error');
+      showStatusEl(resetStatus, `Reset email sent to ${email}.`, 'success');
     });
 
     resetSubmit?.addEventListener('click', async () => {
-      const email = normalizeEmail(resetEmail?.value);
-      const otp = (otpInput?.value || '').trim();
       const nextPassword = resetPass?.value || '';
       const confirmPassword = resetConfirm?.value || '';
 
-      if (!email || !otp || !nextPassword || !confirmPassword) {
-        return showStatusEl(resetStatus, 'Complete all reset fields.', 'error');
-      }
+      if (!nextPassword || !confirmPassword) return showStatusEl(resetStatus, 'Complete all reset fields.', 'error');
       if (nextPassword.length < 6) return showStatusEl(resetStatus, 'Password must be at least 6 characters.', 'error');
       if (nextPassword !== confirmPassword) return showStatusEl(resetStatus, 'Passwords do not match.', 'error');
-
-      let payload = null;
-      try {
-        payload = JSON.parse(sessionStorage.getItem(RESET_OTP_KEY) || 'null');
-      } catch {
-        payload = null;
-      }
-
-      if (!payload) return showStatusEl(resetStatus, 'Request a new OTP first.', 'error');
-      if (payload.email !== email) return showStatusEl(resetStatus, 'OTP email does not match.', 'error');
-      if (payload.otp !== otp) return showStatusEl(resetStatus, 'Invalid OTP.', 'error');
-      if (Date.now() > payload.expiresAt) return showStatusEl(resetStatus, 'OTP expired. Request a new one.', 'error');
-
-      const users = getLocalUsers();
-      const idx = users.findIndex(u => normalizeEmail(u.email) === email);
-      if (idx < 0) return showStatusEl(resetStatus, 'Account not found.', 'error');
-
-      users[idx].passwordHash = await sha256Hex(nextPassword);
-      users[idx].updatedAt = new Date().toISOString();
-      saveLocalUsers(users);
-      sessionStorage.removeItem(RESET_OTP_KEY);
-
+      if (!supabase) return showStatusEl(resetStatus, 'Password reset requires Supabase auth.', 'error');
+      showStatusEl(resetStatus, 'Updating password...', 'loading');
+      const { error } = await supabase.auth.updateUser({ password: nextPassword });
+      if (error) return showStatusEl(resetStatus, error.message, 'error');
       if (passInput) passInput.value = '';
-      if (emailInput) emailInput.value = email;
-      if (otpInput) otpInput.value = '';
+      if (emailInput && resetEmail?.value) emailInput.value = normalizeEmail(resetEmail.value);
       if (resetPass) resetPass.value = '';
       if (resetConfirm) resetConfirm.value = '';
-      showStatusEl(resetStatus, 'Password reset. You can sign in now.', 'success');
+      showStatusEl(resetStatus, 'Password updated. You can log in now.', 'success');
+      setTimeout(() => closeResetModal(), 900);
     });
 
     async function localAuth(mode, email, password) {
@@ -623,11 +637,11 @@ function ensureLocalDraftForUser(user) {
           if (mode === 'login') {
             ({ error, data } = await supabase.auth.signInWithPassword({ email, password }));
           } else {
-            ({ error, data } = await supabase.auth.signUp({
-              email,
-              password,
-              options: { emailRedirectTo: `${window.location.origin}/link-admin.html` }
-            }));
+              ({ error, data } = await supabase.auth.signUp({
+                email,
+                password,
+                options: { emailRedirectTo: buildAdminPageUrl() }
+              }));
           }
           if (error) return showStatusEl(statusEl, error.message, 'error');
           if (mode === 'signup' && data?.user && !data.session) {
@@ -723,7 +737,7 @@ function ensureLocalDraftForUser(user) {
     if (!session) {
       toggleEditor(false);
       setAuthOnly(true);
-    } else if (forceLoad || session) {
+    } else if (forceLoad) {
       persistCurrentUser(session.user);
       toggleEditor(true);
       setAuthOnly(false);
@@ -734,9 +748,19 @@ function ensureLocalDraftForUser(user) {
         showStatusEl(document.getElementById('lt-save-status'), 'Signed in, but profile data failed to load.', 'error');
         loadLocalDraft();
       }
+    } else {
+      persistCurrentUser(session.user);
+      toggleEditor(false);
+      setAuthOnly(true);
     }
     if (authStateSubscription) return;
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sessionNow) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        document.dispatchEvent(new CustomEvent('lt-password-recovery', {
+          detail: { email: normalizeEmail(sessionNow?.user?.email || '') }
+        }));
+        return;
+      }
       if (sessionNow) {
         persistCurrentUser(sessionNow.user);
         toggleEditor(true);
@@ -1442,6 +1466,7 @@ function ensureLocalDraftForUser(user) {
       setAuthOnly(true);
       toggleEditor(false);
       bindAuth();
+      initSession(false);
       bindEditorActions();
     }
   };
