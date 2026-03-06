@@ -1341,12 +1341,12 @@ function ensureLocalDraftForUser(user) {
     const ctx = canvas.getContext('2d');
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     let quality = 0.85;
-    let dataUrl = canvas.toDataURL('image/jpeg', quality);
-    while (dataUrl.length * 0.75 > maxBytes && quality > 0.4) {
+    let outputDataUrl = canvas.toDataURL('image/jpeg', quality);
+    while (outputDataUrl.length * 0.75 > maxBytes && quality > 0.4) {
       quality -= 0.05;
-      dataUrl = canvas.toDataURL('image/jpeg', quality);
+      outputDataUrl = canvas.toDataURL('image/jpeg', quality);
     }
-    return dataUrl;
+    return outputDataUrl;
   }
 
   async function compressImage(file, maxBytes, maxSize) {
