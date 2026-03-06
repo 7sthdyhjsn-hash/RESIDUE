@@ -352,7 +352,33 @@ import { residueTelemetry } from './supabase-telemetry.js';
     return cleaned;
   }
 
-  const localProfileKey = slug => `${LOCAL_PROFILE_KEY_PREFIX}${(slug || '').toLowerCase()}`;
+const localProfileKey = slug => `${LOCAL_PROFILE_KEY_PREFIX}${(slug || '').toLowerCase()}`;
+
+function ensureLocalDraftForUser(user) {
+  if (!user?.email) return;
+  const email = normalizeEmail(user.email);
+  const slug = resolveSlug(email.split('@')[0], email) || 'card';
+  const key = localProfileKey(slug);
+  const existing = localStorage.getItem(key);
+  if (existing) {
+    localStorage.setItem('residue_link_last_profile_key', key);
+    return;
+  }
+  const profile = {
+    name: email,
+    title: '',
+    bio: '',
+    avatar_url: '',
+    theme: 'dark',
+    slug,
+    links: [
+      { label: 'Call', url: 'tel:+', sort: 1, hidden: true },
+      { label: 'Email', url: `mailto:${email}`, sort: 2, hidden: false }
+    ]
+  };
+  localStorage.setItem(key, JSON.stringify(profile));
+  localStorage.setItem('residue_link_last_profile_key', key);
+}
 
   function deriveDisplayName(profileName, user) {
     const fromProfile = String(profileName || '').trim();
@@ -389,7 +415,7 @@ import { residueTelemetry } from './supabase-telemetry.js';
 
   function bindAuth() {
     const loginBtn = document.getElementById('lt-login');
-    const signupBtn = document.getElementById('lt-signup');
+    const signupBtn = document.getElementById('lt-signup') || document.getElementById('lt-signup-inline');
     const emailInput = document.getElementById('lt-auth-email');
     const passInput = document.getElementById('lt-auth-pass');
     const statusEl = document.getElementById('lt-auth-status');
@@ -507,13 +533,14 @@ import { residueTelemetry } from './supabase-telemetry.js';
       return { user };
     }
 
-    async function startLocalSession(user, statusEl) {
-      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
-      showStatusEl(statusEl, 'Signed in (local)', 'success');
-      toggleEditor(true);
-      loadLocalDraft();
-      setAuthOnly(false);
-    }
+  async function startLocalSession(user, statusEl) {
+    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+    showStatusEl(statusEl, 'Signed in (local)', 'success');
+    toggleEditor(true);
+    ensureLocalDraftForUser(user);
+    loadLocalDraft();
+    setAuthOnly(false);
+  }
 
     const doAuth = async mode => {
       try {
@@ -1313,13 +1340,23 @@ import { residueTelemetry } from './supabase-telemetry.js';
         showStatusEl(document.getElementById('lt-auth-status'), 'Run over http://, not file://', 'error');
       }
       if (!supabase) {
-        showStatusEl(document.getElementById('lt-auth-status'), 'Supabase not configured. Login is unavailable.', 'error');
+        showStatusEl(document.getElementById('lt-auth-status'), 'Local mode: data stays on this device.', 'success');
       }
-      localStorage.removeItem(CURRENT_USER_KEY);
-      setAuthOnly(true);
-      toggleEditor(false);
+      // keep any existing local session so users remain signed in
+      const localUser = (() => {
+        try { return JSON.parse(localStorage.getItem(CURRENT_USER_KEY) || 'null'); } catch { return null; }
+      })();
+      if (!localUser) {
+        setAuthOnly(true);
+        toggleEditor(false);
+      }
       bindAuth();
       bindEditorActions();
+      if (localUser) {
+        toggleEditor(true);
+        loadLocalDraft();
+        setAuthOnly(false);
+      }
     }
   };
 })();

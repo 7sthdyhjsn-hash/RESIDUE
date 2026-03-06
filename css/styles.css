@@ -88,6 +88,17 @@ body.page-fade-out {
   animation: fadeOut 260ms ease forwards;
 }
 
+/* Smooth media reveals */
+.lazy-fade {
+  opacity: 0;
+  transform: translateY(8px) scale(0.995);
+  transition: opacity 600ms ease, transform 600ms ease;
+}
+.lazy-fade.loaded {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
 /* Access page theme */
 body.access-page {
   --bg: #0b0814;

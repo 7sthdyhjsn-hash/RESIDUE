@@ -196,6 +196,22 @@
   attachHandled('.enterprise-form', 'Enterprise request sent.');
   attachHandled('form[data-external="true"]', 'Request sent.');
 
+  // Media fade-in
+  const fadeImages = () => {
+    document.querySelectorAll('img:not(.no-fade)').forEach(img => {
+      img.classList.add('lazy-fade');
+      if (img.complete) {
+        img.classList.add('loaded');
+      } else {
+        img.addEventListener('load', () => img.classList.add('loaded'), { once: true });
+        img.addEventListener('error', () => img.classList.add('loaded'), { once: true });
+      }
+    });
+  };
+  fadeImages();
+  const observer = new MutationObserver(() => fadeImages());
+  observer.observe(document.body, { childList: true, subtree: true });
+
   // Access gate
   const validCodes = ['FOUNDER-001'];
   const gateForm = document.querySelector('.gate-form');
