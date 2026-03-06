@@ -9,7 +9,13 @@ import { residueTelemetry } from './supabase-telemetry.js';
 
   const supabase = (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY)
     ? null
-    : createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+    : createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true
+        }
+      });
 
   const setTheme = theme => document.body.setAttribute('data-theme', theme === 'light' ? 'light' : 'dark');
   const setAuthOnly = flag => {
@@ -565,6 +571,21 @@ function ensureLocalDraftForUser(user) {
     setAuthOnly(false);
   }
 
+  async function startSupabaseSession(user, statusEl) {
+    if (!user) throw new Error('Signed in, but no user was returned.');
+    persistCurrentUser(user);
+    toggleEditor(true);
+    setAuthOnly(false);
+    showStatusEl(statusEl, 'Signed in.', 'success');
+    try {
+      await loadProfile(user);
+    } catch (err) {
+      console.error('Profile load failed after direct sign-in', err);
+      showStatusEl(document.getElementById('lt-save-status'), 'Signed in, but profile data failed to load.', 'error');
+      loadLocalDraft();
+    }
+  }
+
     const doAuth = async mode => {
       try {
         const email = normalizeEmail(emailInput?.value);
@@ -608,9 +629,10 @@ function ensureLocalDraftForUser(user) {
             user_id: data?.user?.id || null,
             detail: `Supabase ${mode} succeeded on link-admin.`
           });
-          persistCurrentUser(data?.user || { email });
-          showStatusEl(statusEl, 'Success', 'success');
-          await initSession(true);
+          await startSupabaseSession(data?.user || data?.session?.user, statusEl);
+          initSession(true).catch(err => {
+            console.error('Session refresh failed after direct sign-in', err);
+          });
           return;
         }
 
