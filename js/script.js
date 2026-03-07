@@ -103,39 +103,13 @@
   });
 
   // Theme toggle
-  const themeToggles = document.querySelectorAll('.theme-toggle');
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const storedTheme = localStorage.getItem('residue-theme');
-
-  const applyTheme = (theme) => {
-    document.documentElement.setAttribute('data-theme', theme);
-    body.setAttribute('data-theme', theme);
-    localStorage.setItem('residue-theme', theme);
-    themeToggles.forEach(btn => {
-      const isDark = theme === 'dark';
-      btn.setAttribute('aria-pressed', isDark);
-      const label = btn.querySelector('.theme-label');
-      if (label) label.textContent = isDark ? 'Dark' : 'Light';
-    });
+  // Force dark theme, remove toggle behavior
+  const applyDark = () => {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    body.setAttribute('data-theme', 'dark');
+    localStorage.setItem('residue-theme', 'dark');
   };
-
-  applyTheme(storedTheme || (prefersDark ? 'dark' : 'light'));
-
-  themeToggles.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-      const next = currentTheme === 'dark' ? 'light' : 'dark';
-      if (prefersReducedMotion) {
-        applyTheme(next);
-        return;
-      }
-      body.classList.add('page-fade-out');
-      setTimeout(() => {
-        applyTheme(next);
-        body.classList.remove('page-fade-out');
-      }, 160);
-    });
-  });
+  applyDark();
 
   // Access form inline success
   const handleFormSubmit = (form, statusEl, successMessage) => {
@@ -196,10 +170,16 @@
   attachHandled('.enterprise-form', 'Enterprise request sent.');
   attachHandled('form[data-external="true"]', 'Request sent.');
 
-  // Media fade-in
-  const fadeImages = () => {
+  // Media fade-in + lazy attributes
+  const prepImages = () => {
     document.querySelectorAll('img:not(.no-fade)').forEach(img => {
+      img.loading = img.loading || 'lazy';
+      img.decoding = img.decoding || 'async';
       img.classList.add('lazy-fade');
+      if (!prefersReducedMotion) {
+        const delay = Math.floor(Math.random() * 120);
+        img.style.transitionDelay = `${delay}ms`;
+      }
       if (img.complete) {
         img.classList.add('loaded');
       } else {
@@ -208,8 +188,8 @@
       }
     });
   };
-  fadeImages();
-  const observer = new MutationObserver(() => fadeImages());
+  prepImages();
+  const observer = new MutationObserver(() => prepImages());
   observer.observe(document.body, { childList: true, subtree: true });
 
   // Access gate
