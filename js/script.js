@@ -574,6 +574,106 @@
       }, 600);
     });
 
+  // PRODUCT GALLERY
+  const galleryTrack = document.querySelector("[data-carousel-track]");
+  const galleryPrev = document.querySelector("[data-gallery-prev]");
+  const galleryNext = document.querySelector("[data-gallery-next]");
+  const galleryData = [
+    // Curated order (shuffled from folder listing)
+    { webp: "images/residue-card-iphone-edc-flatlay.webp", fallback: "images/residue-card-iphone-edc-flatlay.jpg", alt: "Residue card with iPhone flatlay" },
+    { webp: "images/residue-card-tap-interaction-hand..webp", fallback: "images/residue-card-tap-interaction-hand..jpg", alt: "Tap interaction close-up" },
+    { webp: "images/residue-card-first-impressions-wallet-edc.webp", fallback: "images/residue-card-first-impressions-wallet-edc.jpg.jpg", alt: "Wallet EDC scene" },
+    { webp: "images/leather-wallet-multitool-residue-card-edc.webp", fallback: "images/leather-wallet-multitool-residue-card-edc.jpg", alt: "Residue card multitool EDC" },
+    { webp: "images/residue-card-not-a-card-signal-clean-product.webp", fallback: "images/residue-card-not-a-card-signal-clean-product.jpg.jpg", alt: "Not a card clean product" },
+    { webp: "images/residue-cards-fanned-macro-shallow-focus.webp", fallback: "images/residue-cards-fanned-macro-shallow-focus.jpg.jpg", alt: "Residue cards fanned, macro detail" },
+    { webp: "images/residue-card-brand-leave-your-mark-edc-scene..webp", fallback: "images/residue-card-brand-leave-your-mark-edc-scene..jpg", alt: "Leave your mark scene" },
+    { webp: "images/leather-wallet-multitool-overhead-residue-brand.webp", fallback: "images/leather-wallet-multitool-overhead-residue-brand.jpg.jpg", alt: "Residue card overhead in wallet" },
+    { path: "images/residue-card-in-hand-product-shot..jpg", alt: "Residue card in hand" },
+    { path: "images/residue-card-set-flatlay-brand-message-collection.jpg.jpg", alt: "Set flatlay brand collection" },
+    { path: "images/residue-cards-fanned-dark-surface-brand-visible.jpg.jpg", alt: "Fanned cards dark surface" },
+    { path: "images/leather-wallet-multitool-edc-angle-shot.jpg.jpg", alt: "Multitool EDC angle shot" },
+    { path: "images/residue-card-not-a-card-a-signal-closeup.jpg.jpg", alt: "Not a card signal closeup" },
+    { path: "images/residue-card-leave-your-mark-closeup.jpg.jpg", alt: "Leave your mark closeup" },
+    { path: "images/residue-card-on-leather-wallet-message-display.jpg.jpg", alt: "Card on leather wallet display" },
+    { path: "images/residue-card-large-r-logo-product.jpg.jpg", alt: "Large R logo product" },
+    { path: "images/residue-card-first-impressions-fade-product.jpg.jpg", alt: "First impressions product" },
+    { path: "images/residue-card-not-a-card-a-signal-product.jpg.jpg", alt: "Not a card signal product" },
+    { path: "images/residue-card-leave-your-mark-product.jpg.jpg", alt: "Leave your mark product" },
+    { path: "images/residue-card-nfc-window-feature.jpg.jpg", alt: "NFC window feature" },
+    { path: "images/multitool-wallet-residue-card-macro-detail.jpg", alt: "Residue card macro detail" },
+    { path: "images/multitool-wallet-residue-card-edc-close.jpg.jpg", alt: "Multitool wallet EDC close" },
+    { path: "images/residue-card-iphone-edc-flatlay.jpg.jpg", alt: "Residue card and iPhone flatlay 2" },
+    { path: "images/residue-card-first-impressions-fade-message.jpg.jpg", alt: "First impressions fade message" },
+    { path: "images/residue-cards-fanned-dark-moody-composition.jpg.jpg", alt: "Fanned cards dark composition" }
+  ];
+
+  if (galleryTrack) {
+    const createSlide = (item, idx) => {
+      const figure = document.createElement("figure");
+      figure.className = "carousel-slide";
+      const picture = document.createElement("picture");
+      if (item.webp) {
+        const source = document.createElement("source");
+        source.srcset = encodeURI(item.webp);
+        source.type = "image/webp";
+        picture.appendChild(source);
+      }
+      const img = document.createElement("img");
+      img.loading = "lazy";
+      img.decoding = "async";
+      img.src = encodeURI(item.path || item.fallback || item.webp);
+      img.alt = item.alt || `Residue frame ${idx + 1}`;
+      picture.appendChild(img);
+      const mediaWrap = document.createElement("div");
+      mediaWrap.className = "media";
+      mediaWrap.appendChild(picture);
+      figure.appendChild(mediaWrap);
+      return figure;
+    };
+
+    galleryData.forEach((item, idx) => {
+      galleryTrack.appendChild(createSlide(item, idx));
+    });
+
+    let current = 0;
+    const total = galleryTrack.children.length;
+    let autoTimer = null;
+    const interval = 3000;
+
+    const goTo = (index) => {
+      current = (index + total) % total;
+      galleryTrack.style.transform = `translateX(-${current * 100}%)`;
+    };
+
+    const startAuto = () => {
+      if (prefersReducedMotion) return;
+      clearInterval(autoTimer);
+      autoTimer = setInterval(() => goTo(current + 1), interval);
+    };
+
+    const stopAuto = () => {
+      clearInterval(autoTimer);
+    };
+
+    galleryPrev?.addEventListener("click", () => {
+      stopAuto();
+      goTo(current - 1);
+      startAuto();
+    });
+    galleryNext?.addEventListener("click", () => {
+      stopAuto();
+      goTo(current + 1);
+      startAuto();
+    });
+
+    galleryTrack.addEventListener("pointerenter", stopAuto);
+    galleryTrack.addEventListener("pointerleave", startAuto);
+    galleryTrack.addEventListener("focusin", stopAuto);
+    galleryTrack.addEventListener("focusout", startAuto);
+
+    startAuto();
+  }
+
 
   // ROTATING HERO HEADER
   const heroCopy = [
