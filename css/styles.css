@@ -810,8 +810,8 @@ p, .muted, .subhead, .h2, h1, h2, h3 {
 }
 
 .legal-block {
-  margin-top: 64px;
-  padding-top: 32px;
+  margin-top: clamp(180px, 22vh, 320px);
+  padding-top: 42px;
   border-top: 1px solid rgba(255,255,255,0.06);
 }
 
