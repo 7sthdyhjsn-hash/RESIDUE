@@ -608,6 +608,12 @@
   ];
 
   if (galleryTrack) {
+    const shuffled = [...galleryData];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
     const createSlide = (item, idx) => {
       const figure = document.createElement("figure");
       figure.className = "carousel-slide";
@@ -631,7 +637,7 @@
       return figure;
     };
 
-    galleryData.forEach((item, idx) => {
+    shuffled.forEach((item, idx) => {
       galleryTrack.appendChild(createSlide(item, idx));
     });
 

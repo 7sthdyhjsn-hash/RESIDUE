@@ -1954,6 +1954,10 @@ footer {
     align-items: flex-start;
   }
 
+  .gallery-controls {
+    align-self: flex-end;
+  }
+
   .quiet-head {
     font-size: clamp(2rem, 7vw, 2.6rem);
   }
