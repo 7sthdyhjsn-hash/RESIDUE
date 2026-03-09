@@ -37,6 +37,10 @@ import { residueTelemetry } from "./supabase-telemetry.js";
     validationClose: qs("#validation-close-btn"),
     paymentModal: qs("#payment-modal"),
     payClose: qs("#payment-modal .close-btn"),
+    termsModal: qs("#terms-modal"),
+    termsClose: qs("#terms-modal .close-btn"),
+    termsAgreeBtn: qs("#terms-agree-btn"),
+    termsDisagreeBtn: qs("#terms-disagree-btn"),
     subtotal: qs("#modal-subtotal"),
     shipping: qs("#modal-shipping"),
     total: qs("#modal-total"),
@@ -75,6 +79,7 @@ import { residueTelemetry } from "./supabase-telemetry.js";
   let selectedCardConfiguration = null;
   let customLogoDataUrl = "";
   let customLogoMeta = null;
+  let pendingTermsOrder = null;
 
   function setStatus(el, message, type = "") {
     if (!el) return;
@@ -423,7 +428,7 @@ import { residueTelemetry } from "./supabase-telemetry.js";
     }
 
     const checkout = getCheckoutData();
-    const order = {
+    pendingTermsOrder = {
       invoice_no: generateInvoiceNo(),
       customer_name: (els.fullName?.value || "").trim(),
       customer_email: (els.email?.value || "").trim().toLowerCase(),
@@ -446,6 +451,10 @@ import { residueTelemetry } from "./supabase-telemetry.js";
       created_at: new Date().toISOString()
     };
 
+    openModal(els.termsModal);
+  }
+
+  async function proceedToPayFast(order) {
     try {
       setStatus(els.payfastStatus, "Creating invoice and saving order...", "loading");
       await saveCardConfiguration();
@@ -548,6 +557,26 @@ import { residueTelemetry } from "./supabase-telemetry.js";
     els.payClose?.addEventListener("click", () => closeModal(els.paymentModal));
     els.paymentModal?.addEventListener("click", (e) => {
       if (e.target === els.paymentModal) closeModal(els.paymentModal);
+    });
+
+    const dismissTermsModal = () => {
+      pendingTermsOrder = null;
+      closeModal(els.termsModal);
+    };
+
+    els.termsClose?.addEventListener("click", dismissTermsModal);
+    els.termsDisagreeBtn?.addEventListener("click", dismissTermsModal);
+    els.termsAgreeBtn?.addEventListener("click", async () => {
+      if (!pendingTermsOrder) {
+        closeModal(els.termsModal);
+        return;
+      }
+      closeModal(els.termsModal);
+      await proceedToPayFast(pendingTermsOrder);
+      pendingTermsOrder = null;
+    });
+    els.termsModal?.addEventListener("click", (e) => {
+      if (e.target === els.termsModal) dismissTermsModal();
     });
 
     const validationClose = qs("#validation-modal .close-btn");

@@ -1727,6 +1727,41 @@ input:focus, textarea:focus {
   cursor: pointer;
 }
 
+.terms-modal-content {
+  width: min(760px, 92vw);
+}
+
+.terms-title {
+  margin: 0;
+  color: var(--text);
+}
+
+.terms-scroll-box {
+  max-height: 320px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 18px;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.02);
+  scrollbar-gutter: stable;
+}
+
+.terms-scroll-box p {
+  margin: 0 0 14px;
+  color: var(--muted);
+}
+
+.terms-scroll-box p:last-child {
+  margin-bottom: 0;
+}
+
+.terms-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
 /* order summary styling */
 .order-summary {
   border: 1px solid var(--border-strong);
