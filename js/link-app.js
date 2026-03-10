@@ -525,6 +525,20 @@ async function ensureLocalDraftForUser(user) {
     return `${url.origin}${url.pathname}`;
   }
 
+  function buildAdminRecoveryUrl() {
+    const recoveryUrl = new URL(buildAdminPageUrl());
+    recoveryUrl.searchParams.set('reset', '1');
+    return recoveryUrl.toString();
+  }
+
+  function isRecoveryReturn() {
+    const search = new URLSearchParams(window.location.search);
+    const hash = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
+    return search.get('reset') === '1'
+      || hash.get('type') === 'recovery'
+      || (!!hash.get('access_token') && !!hash.get('refresh_token'));
+  }
+
   function updateAdminContextUrl(slug) {
     const nextUrl = buildAdminContextUrl(slug);
     const currentUrl = `${window.location.pathname}${window.location.search}`;
@@ -563,6 +577,7 @@ async function ensureLocalDraftForUser(user) {
     const resetConfirm = document.getElementById('lt-reset-confirm');
     const resetSubmit = document.getElementById('lt-reset-submit');
     const resetStatus = document.getElementById('lt-reset-status');
+    const hasRecoveryReturn = isRecoveryReturn();
 
     const setResetMode = mode => {
       const isRecovery = mode === 'recovery';
@@ -604,6 +619,10 @@ async function ensureLocalDraftForUser(user) {
       openRecoveryModal(normalizeEmail(event.detail?.email || ''));
     });
 
+    if (hasRecoveryReturn) {
+      setTimeout(() => openRecoveryModal(normalizeEmail(resetEmail?.value || emailInput?.value || '')), 0);
+    }
+
     const closeResetModal = () => {
       if (!resetModal) return;
       resetModal.hidden = true;
@@ -626,7 +645,7 @@ async function ensureLocalDraftForUser(user) {
       if (!supabase) return showStatusEl(resetStatus, 'Password reset requires Supabase auth.', 'error');
       showStatusEl(resetStatus, 'Sending reset email...', 'loading');
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: buildAdminPageUrl()
+        redirectTo: buildAdminRecoveryUrl()
       });
       if (error) return showStatusEl(resetStatus, error.message, 'error');
       showStatusEl(resetStatus, `Reset email sent to ${email}.`, 'success');
