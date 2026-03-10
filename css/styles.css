@@ -414,7 +414,7 @@ header.scrolled {
   text-align: center;
   padding: 20vh 24px 18vh;
   overflow: hidden;
-  background-image: url('../images/residue-cards-fanned-macro-shallow-focus.jpg.jpg');
+  background-image: url('../images/residue-cards-fanned-macro-shallow-focus.webp');
   background-image: image-set(
     url('../images/residue-cards-fanned-macro-shallow-focus.webp') type('image/webp'),
     url('../images/residue-cards-fanned-macro-shallow-focus.jpg.jpg') type('image/jpeg')
@@ -426,7 +426,7 @@ header.scrolled {
 
 /* Page-specific hero overrides */
 body.how-page .hero {
-  background-image: url('../images/residue-card-tap-interaction-hand..jpg');
+  background-image: url('../images/residue-card-tap-interaction-hand..webp');
   background-image: image-set(
     url('../images/residue-card-tap-interaction-hand..webp') type('image/webp'),
     url('../images/residue-card-tap-interaction-hand..jpg') type('image/jpeg')
@@ -1279,7 +1279,7 @@ input:focus, textarea:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-image: url('../images/leather-wallet-multitool-overhead-residue-brand.jpg.jpg');
+  background-image: url('../images/leather-wallet-multitool-overhead-residue-brand.webp');
   background-image: image-set(
     url('../images/leather-wallet-multitool-overhead-residue-brand.webp') type('image/webp'),
     url('../images/leather-wallet-multitool-overhead-residue-brand.jpg.jpg') type('image/jpeg')
@@ -1799,7 +1799,7 @@ input:focus, textarea:focus {
 
 /* Premium hero */
 .premium-hero {
-  background-image: url('../images/arcitecture of old greek.jpg');
+  background-image: url('../images/arcitecture of old greek.webp');
   background-image: image-set(
     url('../images/arcitecture of old greek.webp') type('image/webp'),
     url('../images/arcitecture of old greek.jpg') type('image/jpeg')
@@ -2506,7 +2506,7 @@ body::after { opacity: 0.04; }
   background-color: #050505;
   background-image:
     linear-gradient(180deg, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.9)),
-    url('../images/leather-wallet-multitool-residue-card-edc.jpg');
+    url('../images/leather-wallet-multitool-residue-card-edc.webp');
   background-image:
     linear-gradient(180deg, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.9)),
     image-set(
