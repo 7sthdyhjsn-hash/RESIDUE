@@ -2468,14 +2468,45 @@ body::after { opacity: 0.04; }
 .card-urls-copy-btn {
   width: 42px;
   height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 12px;
   border: 1px solid rgba(214,176,122,0.36);
   background: rgba(214,176,122,0.08);
   color: var(--accent-premium);
   font: inherit;
-  font-size: 1.05rem;
   cursor: pointer;
   transition: border-color 180ms ease, transform 180ms ease, background 180ms ease;
+}
+
+.card-urls-copy-icon {
+  position: relative;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+}
+
+.card-urls-copy-icon::before,
+.card-urls-copy-icon::after {
+  content: '';
+  position: absolute;
+  width: 11px;
+  height: 13px;
+  border: 1.6px solid currentColor;
+  border-radius: 2px;
+  background: transparent;
+}
+
+.card-urls-copy-icon::before {
+  top: 0;
+  left: 4px;
+}
+
+.card-urls-copy-icon::after {
+  top: 3px;
+  left: 1px;
+  opacity: 0.82;
 }
 
 .card-urls-copy-btn:hover {
