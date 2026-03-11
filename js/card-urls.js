@@ -74,7 +74,7 @@ function renderUrlRows(rows) {
     copyBtn.type = 'button';
     copyBtn.className = 'card-urls-copy-btn';
     copyBtn.setAttribute('aria-label', `Copy URL for ${row.auth_email}`);
-    copyBtn.textContent = 'Copy';
+    copyBtn.innerHTML = '<span class="card-urls-copy-icon" aria-hidden="true"></span>';
     copyBtn.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(row.url);

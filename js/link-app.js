@@ -951,10 +951,14 @@ async function ensureLocalDraftForUser(user) {
     const displayName = deriveDisplayName(profile?.name, user);
     const savedTitle = typeof snapshotFields.role === 'string' ? snapshotFields.role : '';
     const savedBio = typeof snapshotFields['lt-bio'] === 'string' ? snapshotFields['lt-bio'] : '';
+    const savedTheme = profile?.theme === 'light' ? 'light' : 'dark';
     setValue('lt-avatar-url', profile.avatar_url || '');
     setValue('full-name', displayName || '');
     setValue('role', savedTitle || profile.title || '');
     setValue('lt-bio', savedBio || profile.bio || '');
+    const themeInput = document.querySelector(`input[name="lt-theme"][value="${savedTheme}"]`);
+    if (themeInput) themeInput.checked = true;
+    setTheme(savedTheme);
     if (profile?.slug) updatePublicUrl(profile.slug);
     else syncAutoSlug(displayName || '', profile.auth_email || displayName || profile.name || '');
     const setToggle = (id, checked = true) => {
@@ -1394,9 +1398,17 @@ async function ensureLocalDraftForUser(user) {
     const saveStatusEl = document.getElementById('lt-save-status');
     const waMessage = document.getElementById('whatsapp-message');
     const waMessageCount = document.getElementById('whatsapp-message-count');
+    const themeInputs = Array.from(document.querySelectorAll('input[name="lt-theme"]'));
 
     fullNameInput?.addEventListener('input', () => {
       syncAutoSlug(fullNameInput.value, getValue('email-config'));
+    });
+
+    themeInputs.forEach(input => {
+      input.addEventListener('change', () => {
+        if (!input.checked) return;
+        setTheme(input.value);
+      });
     });
 
     const handleLogoChange = async () => {
