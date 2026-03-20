@@ -52,6 +52,7 @@ import { residueTelemetry } from "./supabase-telemetry.js";
     shippingPostal: qs("#shipping-postal"),
     shippingNextBtn: qs("#shipping-next-btn"),
     payfastStatus: qs("#payfast-status"),
+    payfastConfirmStatus: qs("#payfast-confirm-status"),
     payfastConfirmModal: qs("#payfast-confirm-modal"),
     payfastConfirmClose: qs("#payfast-confirm-modal .close-btn"),
     payfastSubtotal: qs("#payfast-subtotal"),
@@ -98,6 +99,11 @@ import { residueTelemetry } from "./supabase-telemetry.js";
     el.hidden = !message;
     el.className = "status configure-status";
     if (type) el.classList.add(type);
+  }
+
+  function setPayFastStatus(message, type = "") {
+    setStatus(els.payfastStatus, message, type);
+    setStatus(els.payfastConfirmStatus, message, type);
   }
 
   function openModal(el) {
@@ -453,7 +459,7 @@ import { residueTelemetry } from "./supabase-telemetry.js";
         return;
       }
       if (!(file.type || "").startsWith("image/")) {
-        setStatus(els.payfastStatus, "Custom logo must be an image file.", "error");
+        setPayFastStatus("Custom logo must be an image file.", "error");
         els.customLogoFile.value = "";
         customLogoDataUrl = "";
         customLogoMeta = null;
@@ -536,7 +542,7 @@ import { residueTelemetry } from "./supabase-telemetry.js";
     if (els.shippingName && !els.shippingName.value.trim()) {
       els.shippingName.value = (els.fullName?.value || "").trim();
     }
-    setStatus(els.payfastStatus, "");
+    setPayFastStatus("");
     showPurchaseStep(els.paymentModal);
   }
 
@@ -553,7 +559,7 @@ import { residueTelemetry } from "./supabase-telemetry.js";
         email: (els.email?.value || "").trim().toLowerCase(),
         detail: "Shipping details incomplete before payment."
       });
-      setStatus(els.payfastStatus, "Complete shipping details before payment.", "error");
+      setPayFastStatus("Complete shipping details before payment.", "error");
       return;
     }
 
@@ -588,7 +594,7 @@ import { residueTelemetry } from "./supabase-telemetry.js";
   async function proceedToPayFast(order) {
     try {
       const sessionUser = await getAuthenticatedUser();
-      setStatus(els.payfastStatus, "Creating invoice and saving order...", "loading");
+      setPayFastStatus("Creating invoice and saving order...", "loading");
       await saveCardConfiguration(sessionUser);
       await insertOrder(order);
       await upsertInvoice(order, sessionUser?.id || null);
@@ -620,8 +626,11 @@ import { residueTelemetry } from "./supabase-telemetry.js";
         quantity: order.quantity,
         detail: "Redirecting user to PayFast."
       });
-      setStatus(els.payfastStatus, "Redirecting to PayFast...", "success");
-      setTimeout(() => els.payfastForm.submit(), 250);
+      setPayFastStatus("Redirecting to PayFast...", "success");
+      setTimeout(() => {
+        closeModal(els.payfastConfirmModal);
+        els.payfastForm.submit();
+      }, 250);
     } catch (err) {
       residueTelemetry.logPurchaseEvent({
         stage: "invoice_created",
@@ -629,7 +638,7 @@ import { residueTelemetry } from "./supabase-telemetry.js";
         email: (els.email?.value || "").trim().toLowerCase(),
         detail: err.message || "Could not create invoice/start payment."
       });
-      setStatus(els.payfastStatus, err.message || "Could not start payment.", "error");
+      setPayFastStatus(err.message || "Could not start payment.", "error");
     }
   }
 
@@ -731,9 +740,10 @@ import { residueTelemetry } from "./supabase-telemetry.js";
         dismissPayFastConfirm();
         return;
       }
-      closeModal(els.payfastConfirmModal);
       await proceedToPayFast(pendingTermsOrder);
-      pendingTermsOrder = null;
+      if (!els.payfastConfirmStatus?.classList.contains("error")) {
+        pendingTermsOrder = null;
+      }
     });
     els.payfastConfirmModal?.addEventListener("click", (e) => {
       if (e.target === els.payfastConfirmModal) dismissPayFastConfirm();
