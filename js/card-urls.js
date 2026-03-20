@@ -238,6 +238,7 @@ async function fetchInvoiceRows() {
     customer_phone: row.customer_phone || '',
     quantity: row.quantity ?? '',
     card_configuration: formatConfig(row.card_configuration),
+    custom_logo_requested: !!row.custom_logo_requested,
     logo_value: formatLogoValue(row),
     custom_logo_image: row.custom_logo_image || '',
     custom_logo_file_name: row.custom_logo_file_name || '',
