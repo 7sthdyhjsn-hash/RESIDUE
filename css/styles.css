@@ -2957,6 +2957,27 @@ body::after { opacity: 0.04; }
   transform: translateY(-1px);
 }
 
+.card-urls-download-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(214,176,122,0.36);
+  background: rgba(214,176,122,0.08);
+  color: var(--accent-premium);
+  text-decoration: none;
+  font-weight: 600;
+  transition: border-color 180ms ease, transform 180ms ease, background 180ms ease;
+}
+
+.card-urls-download-btn:hover {
+  border-color: rgba(214,176,122,0.7);
+  background: rgba(214,176,122,0.14);
+  transform: translateY(-1px);
+}
+
 .card-urls-empty {
   text-align: center !important;
   color: var(--muted);
