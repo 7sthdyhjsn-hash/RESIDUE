@@ -24,13 +24,6 @@ Deno.serve(async req => {
     return json({ error: "Method not allowed" }, 405);
   }
 
-  // This function is meant to run with Supabase JWT verification enabled.
-  // Only authenticated users should be able to retrieve checkout configuration.
-  const authHeader = req.headers.get("authorization") || "";
-  if (!authHeader.toLowerCase().startsWith("bearer ")) {
-    return json({ error: "Unauthorized" }, 401);
-  }
-
   if (!PAYFAST_MERCHANT_ID || !PAYFAST_MERCHANT_KEY) {
     return json({
       error: "Missing PayFast secrets",
