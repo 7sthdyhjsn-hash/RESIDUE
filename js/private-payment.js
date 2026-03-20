@@ -216,22 +216,23 @@ import { residueTelemetry } from "./supabase-telemetry.js";
     payFastCredentialsPromise = (async () => {
       if (!supabase) throw new Error("Supabase is not configured in js/env.js.");
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error("Sign in before starting a PayFast checkout.");
-      }
 
       const functionsBaseUrl = buildSupabaseFunctionsBaseUrl();
       if (!functionsBaseUrl) {
         throw new Error("Could not determine the Supabase Functions URL.");
       }
 
+      const headers = {
+        apikey: cfg.SUPABASE_ANON_KEY || "",
+        Accept: "application/json"
+      };
+      if (session?.access_token) {
+        headers.Authorization = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch(`${functionsBaseUrl}/payfast-config`, {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          apikey: cfg.SUPABASE_ANON_KEY || "",
-          Accept: "application/json"
-        }
+        headers
       });
 
       const payload = await response.json().catch(() => ({}));
